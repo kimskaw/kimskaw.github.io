@@ -1,44 +1,83 @@
-<!DOCTYPE HTML>
+<!doctype html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kim Pi Skaw — Portfolio</title>
+  <meta name="description" content="Kim Pi Skaw — self-hosted infrastructure, Linux, Docker, monitoring, and security hardening projects.">
   <link rel="stylesheet" href="css/styles.css">
-  <link href="http://fonts.cdnfonts.com/css/tt-commons" rel="stylesheet">
-  <title>Hello</title>
 </head>
-<header>
-  <nav class="navbar navbar-expand-sm">
-    <ul class="navbar-nav mx-auto">
-      <li class="nav-item">
-        <a class="text-dark nav-link" href="/index.html">
-          Home
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="text-dark nav-link" href="/projects.html">
-          Projects
-        </a>
-      </li>
-    </ul>
-  </nav>
-</header>
-
 <body>
-  <h1 class="page-title">
-    <div class="d-flex justify-content-center">
-      <div>Hello</div>
-    </div>
-  </h1>
-  <div class="text-white d-flex justify-content-center">
-    <div class="mt-3">
-      <p>My name is Kim Pi Skaw and I post stuffs here.
-      </p>
-    </div>
-  </div>
-</body>
 
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="logo" href="index.html"><span class="prompt">~/</span>kimskaw</a>
+    <ul class="links">
+      <li><a href="index.html" aria-current="page">home</a></li>
+      <li><a href="projects.html">projects</a></li>
+      <li><a href="https://github.com/kimskaw" target="_blank" rel="noopener">github</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero hero-single">
+    <div>
+      <span class="eyebrow">whoami</span>
+      <h1>Kim Pi Skaw</h1>
+      <p class="subtitle">
+        I build and document self-hosted infrastructure — Linux servers, Docker stacks,
+        monitoring pipelines, and the security hardening that keeps them honest.
+        This site collects the write-ups.
+      </p>
+      <div class="tags">
+        <span class="pill">Linux</span>
+        <span class="pill">Docker Compose</span>
+        <span class="pill">Prometheus / Grafana / Loki</span>
+        <span class="pill">DNS &amp; networking</span>
+        <span class="pill">Security hardening</span>
+        <span class="pill">Automation</span>
+      </div>
+      <div class="btn-row">
+        <a class="btn" href="projects.html">View projects</a>
+        <a class="btn ghost" href="mailto:kimpiskaw@gmail.com">Get in touch</a>
+      </div>
+    </div>
+  </header>
+
+  <h2>Featured work</h2>
+  <div class="project-grid">
+    <a class="project-card" href="projects/home-server.html">
+      <div class="thumb">
+        <img src="images/pi.jpg" alt="Raspberry Pi board">
+      </div>
+      <div class="card-body">
+        <div class="status">Write-up</div>
+        <h3>Turning a $60 Raspberry Pi into Real Infrastructure</h3>
+        <p>
+          Twelve production services on one board: network-wide ad blocking, intrusion
+          detection, full observability, workflow automation — with zero ports exposed
+          to the internet.
+        </p>
+        <div class="tags">
+          <span class="pill">Pi-hole</span>
+          <span class="pill">CrowdSec</span>
+          <span class="pill">Grafana</span>
+          <span class="pill">Tailscale</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <footer class="site-footer">
+    <div>© Kim Pi Skaw · Built by hand, no frameworks, no trackers.</div>
+    <div class="foot-links">
+      <a href="https://github.com/kimskaw" target="_blank" rel="noopener">github.com/kimskaw</a>
+      <a href="mailto:kimpiskaw@gmail.com">kimpiskaw@gmail.com</a>
+    </div>
+  </footer>
+
+</div>
+</body>
 </html>
