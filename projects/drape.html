@@ -220,14 +220,10 @@
     of the graph is unchanged.
   </p>
 
-  <h3>Why CatVTON, and not full image generation</h3>
   <p>
-    The project started on a <strong>Qwen-Image-Edit</strong> two-stage LoRA graph — extract the
-    outfit, then transfer it. It worked, but because it regenerated the whole scene, faces and
-    body proportions drifted. Switching to <strong>CatVTON</strong> fixed it: it masks the garment
-    region on the <em>actual person photo</em> and inpaints only that region. Everything outside the
-    mask is never touched, so identity, pose, and background survive by construction. The old Qwen
-    approach is archived in the repo.
+    This isn't the first architecture the project ran on — it started on a completely different
+    approach that generated the whole image. <a href="#approaches">See the comparison below</a> for
+    why that got replaced.
   </p>
 
   <h3>The API flow</h3>
@@ -239,6 +235,89 @@
     <li><strong>Fetch results</strong> — once the graph finishes, it polls <code>/history/{promptId}</code> and pulls output images from <code>/view</code>.</li>
     <li><strong>Cancel / reset</strong> — aborts in-flight fetches and calls <code>/interrupt</code> + <code>/queue {clear:true}</code> so the server stops too.</li>
   </ul>
+
+  <h2 id="approaches">Two approaches: Qwen-Image-Edit vs CatVTON</h2>
+  <p>
+    DRAPE's frontend is the same today as it was at the start, but the AI pipeline behind it was
+    rebuilt from scratch. The first version — archived in <code>qwen-version/</code> in the repo —
+    used <strong>Qwen-Image-Edit</strong> and generated the whole image. The current one uses
+    <strong>CatVTON</strong> and only repaints the clothing. They solve the same problem in
+    fundamentally opposite ways.
+  </p>
+
+  <h3>V1 — Qwen-Image-Edit, two-stage generative transfer</h3>
+  <p>
+    The Qwen version built a two-stage LoRA graph on a Qwen-Image-Edit UNet, driven by a
+    4-step Lightning LoRA plus two task LoRAs:
+  </p>
+  <ul>
+    <li>
+      <strong>Stage 1 — extract the outfit.</strong> The garment photo plus a fixed pose skeleton
+      (<code>frame.png</code>) go through an <code>extract-outfit</code> LoRA and get regenerated as
+      a clean product view — the full outfit rendered front, side, and back on a plain white
+      background (image below). Saved as <code>drape_stage1</code>.
+    </li>
+    <li>
+      <strong>Stage 2 — transfer onto the model.</strong> That extracted-outfit image plus the user's
+      model photo feed a <code>clothtransfer</code> LoRA, and a second sampler paints the outfit onto
+      a freshly generated model at the model photo's resolution. Saved as <code>drape_final</code>.
+    </li>
+  </ul>
+  <p>
+    Both stages run inside <strong>one submitted graph</strong>; the frontend watches the WebSocket
+    for the stage-2 nodes to start firing and flips its progress UI from "extracting" to
+    "transferring" mid-run. It needs a heavier model set — the Qwen UNet, a Qwen 2.5-VL text encoder,
+    a VAE, and three LoRAs — and a couple of fixed input assets baked into ComfyUI.
+  </p>
+
+  <div class="frame" style="margin:1.4rem 0; max-width:760px;">
+    <img src="../assets/img/drape-qwen-stage1.png" alt="Qwen stage-1 output: the extracted outfit rendered on a generated model from four angles on a white background" style="display:block;width:100%;">
+  </div>
+  <p style="font-family:var(--mono);font-size:0.72rem;color:var(--text-dim);margin-top:-0.6rem;">
+    Qwen stage-1 output — the outfit "extracted" onto a fully <em>generated</em> model. Note it's a
+    synthetic person, not the user's photo. That's the whole problem.
+  </p>
+
+  <h3>V2 — CatVTON, masked inpainting</h3>
+  <p>
+    CatVTON never generates a new person. It runs a DeepLabV3+ human-parsing pass to build a precise
+    mask of just the clothing region on the <em>actual model photo</em>, then inpaints the reference
+    garment into that mask. Every pixel outside the mask — face, hands, hair, pose, background — is
+    copied through untouched. Three nodes, one stage, built on SD1.5-inpainting.
+  </p>
+
+  <h3>Why the switch</h3>
+  <p>
+    The Qwen approach worked and its extracted-outfit views looked great — but because stage 2
+    <em>generates</em> the person wearing the clothes, the model who came out was not the model who
+    went in. Faces drifted, body proportions shifted, and the background was invented. For a try-on
+    tool, that defeats the purpose: users want to see <em>themselves</em> in the garment, not a
+    lookalike. CatVTON preserves identity by construction, because it literally never redraws those
+    pixels. The cost is a narrower job (it needs a real person photo and fits garments onto it, rather
+    than also being able to visualize an outfit standalone) and a different, lighter model stack.
+  </p>
+
+  <div class="table-scroll">
+  <table>
+    <tr><th></th><th>V1 — Qwen-Image-Edit</th><th>V2 — CatVTON <span style="color:var(--brand-1);">(current)</span></th></tr>
+    <tr><td>Core idea</td><td>Generative — regenerates the whole image</td><td>Inpainting — repaints only the clothing region</td></tr>
+    <tr><td>Pipeline</td><td>Two-stage (extract outfit → transfer), one graph</td><td>Single-stage mask → inpaint</td></tr>
+    <tr><td>Nodes</td><td>~15 (dual samplers, encoders, 3 LoRAs)</td><td>3 (parse mask → CatVTON → save)</td></tr>
+    <tr><td>Models</td><td>Qwen UNet + Qwen 2.5-VL encoder + VAE + Lightning/extract/transfer LoRAs</td><td>DeepLabV3+ parser + CatVTON attention on SD1.5-inpaint</td></tr>
+    <tr><td>Identity / pose / background</td><td>Regenerated — <strong>drifts</strong></td><td><strong>Preserved</strong> by construction</td></tr>
+    <tr><td>Model photo required?</td><td>No — can synthesize a model</td><td>Yes — fits onto the real photo</td></tr>
+    <tr><td>Fixed input assets</td><td>Needs <code>frame.png</code> pose skeleton + default models in ComfyUI <code>/input</code></td><td>None beyond the two uploads</td></tr>
+    <tr><td>Standalone outfit view</td><td>Yes (stage-1 product render)</td><td>No</td></tr>
+    <tr><td>Status</td><td>Archived in <code>qwen-version/</code></td><td>Live app</td></tr>
+  </table>
+  </div>
+
+  <p>
+    Both versions share the exact same frontend — the redesigned layout, the WebSocket progress
+    wiring, the upload and download plumbing. Only <code>buildWorkflow()</code> changed: swap the
+    graph it emits and the whole app retargets a different AI backend. That's the payoff of keeping
+    the browser as a thin orchestrator over ComfyUI's API instead of baking the pipeline into it.
+  </p>
 
   <h2>Tech stack</h2>
   <div class="table-scroll">
