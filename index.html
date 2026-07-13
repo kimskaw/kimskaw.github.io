@@ -3,81 +3,305 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kim Pi Skaw — Portfolio</title>
-  <meta name="description" content="Kim Pi Skaw — self-hosted infrastructure, Linux, Docker, monitoring, and security hardening projects.">
-  <link rel="stylesheet" href="css/styles.css">
+  <title>Kim Pi Skaw — Infrastructure &amp; Homelab</title>
+  <meta name="description" content="Kim Pi Skaw builds and documents self-hosted infrastructure — Linux, Docker, monitoring, and security hardening.">
+  <meta property="og:title" content="Kim Pi Skaw — Infrastructure &amp; Homelab">
+  <meta property="og:description" content="Self-hosted infrastructure, Linux, Docker, monitoring, and security hardening projects.">
+  <script>if (localStorage.getItem("theme") === "light") document.documentElement.setAttribute("data-theme", "light");</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🖥️</text></svg>">
 </head>
 <body>
+<div class="bg-fx" aria-hidden="true"></div>
 
-<nav class="site-nav">
+<header class="nav">
   <div class="nav-inner">
-    <a class="logo" href="index.html"><span class="prompt">~/</span>kimskaw</a>
-    <ul class="links">
-      <li><a href="index.html" aria-current="page">home</a></li>
-      <li><a href="projects.html">projects</a></li>
-      <li><a href="https://github.com/kimskaw" target="_blank" rel="noopener">github</a></li>
-    </ul>
-  </div>
-</nav>
-
-<div class="wrap">
-
-  <header class="hero hero-single">
-    <div>
-      <span class="eyebrow">whoami</span>
-      <h1>Kim Pi Skaw</h1>
-      <p class="subtitle">
-        I build and document self-hosted infrastructure — Linux servers, Docker stacks,
-        monitoring pipelines, and the security hardening that keeps them honest.
-        This site collects the write-ups.
-      </p>
-      <div class="tags">
-        <span class="pill">Linux</span>
-        <span class="pill">Docker Compose</span>
-        <span class="pill">Prometheus / Grafana / Loki</span>
-        <span class="pill">DNS &amp; networking</span>
-        <span class="pill">Security hardening</span>
-        <span class="pill">Automation</span>
-      </div>
-      <div class="btn-row">
-        <a class="btn" href="projects.html">View projects</a>
-        <a class="btn ghost" href="mailto:kimpiskaw@gmail.com">Get in touch</a>
-      </div>
+    <a class="logo" href="#top" aria-label="Kim Pi Skaw — home">
+      <span class="mark">ks</span>kimskaw
+    </a>
+    <nav aria-label="Main">
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li><a class="nav-cta" href="https://github.com/kimskaw" target="_blank" rel="noopener">GitHub ↗</a></li>
+      </ul>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle color theme">
+        <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button class="icon-btn nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
     </div>
-  </header>
+  </div>
+</header>
 
-  <h2>Featured work</h2>
-  <div class="project-grid">
-    <a class="project-card" href="projects/home-server.html">
-      <div class="thumb">
-        <img src="images/pi.jpg" alt="Raspberry Pi board">
-      </div>
-      <div class="card-body">
-        <div class="status">Write-up</div>
-        <h3>Turning a $60 Raspberry Pi into Real Infrastructure</h3>
-        <p>
-          Twelve production services on one board: network-wide ad blocking, intrusion
-          detection, full observability, workflow automation — with zero ports exposed
-          to the internet.
+<main id="top">
+  <div class="container">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero" aria-label="Intro">
+      <div>
+        <p class="hero-kicker">$ whoami</p>
+        <h1>Kim Pi Skaw<span class="grad-text">.</span></h1>
+        <p class="headline-2">I build self-hosted infrastructure that runs itself.</p>
+        <p class="hero-blurb">
+          Linux servers, Docker stacks, monitoring pipelines, and the
+          <strong>security hardening</strong> that keeps them honest. I like small
+          hardware doing serious work — and writing up what broke along the way.
         </p>
-        <div class="tags">
-          <span class="pill">Pi-hole</span>
-          <span class="pill">CrowdSec</span>
-          <span class="pill">Grafana</span>
-          <span class="pill">Tailscale</span>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#projects">
+            See my work
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-outline" href="mailto:kimpiskaw@gmail.com">Get in touch</a>
+        </div>
+        <div class="hero-social">
+          <a href="https://github.com/kimskaw" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.27 5.68.41.36.78 1.06.78 2.14 0 1.54-.01 2.79-.01 3.17 0 .31.21.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+          </a>
+          <a href="mailto:kimpiskaw@gmail.com" aria-label="Email">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+          </a>
         </div>
       </div>
-    </a>
+
+      <div class="term reveal" aria-hidden="true">
+        <div class="term-bar"><i></i><i></i><i></i><span>kim@homelab: ~</span></div>
+        <div class="term-body">
+          <span class="ln"><span class="p">kim@homelab:~$</span> <span class="cmd">./status.sh</span></span>
+          <span class="ln out">─────────────────────────────</span>
+          <span class="ln out">host      <span class="hl">raspberry-pi-4</span> · debian 13</span>
+          <span class="ln out">services  <span class="hl">12 containers</span> · 24/7</span>
+          <span class="ln out">dns       pi-hole <span class="ok">● blocking</span></span>
+          <span class="ln out">ids       crowdsec <span class="ok">● watching</span></span>
+          <span class="ln out">metrics   prometheus + grafana <span class="ok">● up</span></span>
+          <span class="ln out">logs      loki <span class="ok">● shipping</span></span>
+          <span class="ln out">access    tailscale mesh only</span>
+          <span class="ln out">exposed ports  <span class="ok">0</span></span>
+          <span class="ln out">─────────────────────────────</span>
+          <span class="ln"><span class="p">kim@homelab:~$</span> <span class="caret"></span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT ============ -->
+    <section id="about">
+      <div class="section-head reveal"><span class="num">01.</span><h2>About</h2></div>
+      <div class="about-grid">
+        <div class="about-text reveal">
+          <p>
+            I'm a hands-on builder who treats a home network like production. My lab
+            runs <strong>twelve services around the clock</strong> on a single Raspberry Pi —
+            network-wide ad blocking, intrusion detection, full observability, and workflow
+            automation — with <strong>zero ports exposed to the internet</strong>.
+          </p>
+          <p>
+            What I care about is the unglamorous half of infrastructure: auditing what's
+            actually running, closing exposure that "looked fine," and making deliberate
+            tradeoffs between automation and stability. When something breaks, I dig until
+            I understand <strong>why</strong> — then I write it up.
+          </p>
+          <p>
+            Everything I ship gets documented, including the mistakes. The write-ups below
+            aren't feature lists; they're what went wrong and what it took to notice.
+          </p>
+        </div>
+        <ul class="fact-list reveal">
+          <li>
+            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="20" height="8" rx="2"/><path d="M6 18h.01M10 18h.01"/><path d="M4 14V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8"/></svg></span>
+            <div><b>Self-hosted first</b><span>If I can run it myself, I do — and harden it.</span></div>
+          </li>
+          <li>
+            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <div><b>Security by default</b><span>"It's just the LAN" is not a boundary.</span></div>
+          </li>
+          <li>
+            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-6 4 3 4-8"/></svg></span>
+            <div><b>Measure everything</b><span>"Up" isn't the same as "correct."</span></div>
+          </li>
+          <li>
+            <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h2"/></svg></span>
+            <div><b>Document the mess</b><span>Write-ups include the failures, not just wins.</span></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ SKILLS ============ -->
+    <section id="skills">
+      <div class="section-head reveal"><span class="num">02.</span><h2>Skills &amp; tools</h2></div>
+      <p class="section-sub reveal">The stack I actually run — not a keyword wall.</p>
+      <div class="skills-grid">
+        <div class="skill-card reveal">
+          <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span>
+          <h3>Linux &amp; systems</h3>
+          <div class="chips">
+            <span class="chip">Debian</span><span class="chip">systemd</span><span class="chip">Bash</span>
+            <span class="chip">SSH hardening</span><span class="chip">iptables / nftables</span>
+          </div>
+        </div>
+        <div class="skill-card reveal">
+          <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+          <h3>Containers</h3>
+          <div class="chips">
+            <span class="chip">Docker</span><span class="chip">Docker Compose</span>
+            <span class="chip">Portainer</span><span class="chip">host-network isolation</span>
+          </div>
+        </div>
+        <div class="skill-card reveal">
+          <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-6 4 3 4-8"/></svg></span>
+          <h3>Observability</h3>
+          <div class="chips">
+            <span class="chip">Prometheus</span><span class="chip">Grafana</span><span class="chip">Loki</span>
+            <span class="chip">blackbox-exporter</span><span class="chip">cAdvisor</span>
+          </div>
+        </div>
+        <div class="skill-card reveal">
+          <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/></svg></span>
+          <h3>Network &amp; security</h3>
+          <div class="chips">
+            <span class="chip">Pi-hole / DNS</span><span class="chip">CrowdSec</span>
+            <span class="chip">Tailscale</span><span class="chip">zero exposed ports</span>
+          </div>
+        </div>
+        <div class="skill-card reveal">
+          <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg></span>
+          <h3>Automation</h3>
+          <div class="chips">
+            <span class="chip">n8n workflows</span><span class="chip">cron</span>
+            <span class="chip">LLM-graded alert digests</span>
+          </div>
+        </div>
+        <div class="skill-card reveal">
+          <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span>
+          <h3>Documentation</h3>
+          <div class="chips">
+            <span class="chip">Technical write-ups</span><span class="chip">Runbooks</span>
+            <span class="chip">Post-incident notes</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROJECTS ============ -->
+    <section id="projects">
+      <div class="section-head reveal"><span class="num">03.</span><h2>Projects</h2></div>
+      <p class="section-sub reveal">Built, broken, fixed, documented.</p>
+
+      <article class="feature-card reveal">
+        <div class="feature-media">
+          <img src="assets/img/pi.jpg" alt="Raspberry Pi 4 single-board computer">
+        </div>
+        <div class="feature-body">
+          <p class="feature-tag">Featured · Write-up</p>
+          <h3><a href="projects/home-server.html">Turning a $60 Raspberry Pi into Real Infrastructure</a></h3>
+          <p>
+            Network-wide ad blocking, intrusion detection, full observability, and
+            workflow automation on one low-power board — plus the honest part:
+            overlapping monitoring stacks, dashboards open to the whole Wi-Fi, and a
+            metrics exporter that lied. Found, fixed, documented.
+          </p>
+          <div class="feature-metrics">
+            <div class="m"><b>12</b><span>services 24/7</span></div>
+            <div class="m"><b>0</b><span>exposed ports</span></div>
+            <div class="m"><b>-50%</b><span>system load</span></div>
+          </div>
+          <div class="chips">
+            <span class="chip">Docker Compose</span><span class="chip">Pi-hole</span>
+            <span class="chip">CrowdSec</span><span class="chip">Prometheus</span>
+            <span class="chip">Grafana</span><span class="chip">Loki</span>
+            <span class="chip">Tailscale</span><span class="chip">n8n</span>
+          </div>
+          <div class="feature-links">
+            <a class="link-arrow" href="projects/home-server.html">
+              Read the write-up
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <article class="feature-card reveal">
+        <div class="feature-media">
+          <img src="assets/img/drape-hero.png" alt="A model wearing a garment fitted by the DRAPE virtual try-on tool">
+        </div>
+        <div class="feature-body">
+          <p class="feature-tag">Project · Write-up</p>
+          <h3><a href="projects/drape.html">DRAPE — Browser-Based AI Virtual Try-On</a></h3>
+          <p>
+            Drop in a garment photo and a person photo; DRAPE renders that person wearing it
+            with their face, pose, and background untouched. A pure vanilla-JS frontend
+            orchestrating a local ComfyUI CatVTON pipeline over HTTP + WebSocket — plus the
+            honest part: a "missing node" that was really an import crash, a detectron2 build
+            dead end, and weights that had to be reassembled by hand.
+          </p>
+          <div class="feature-metrics">
+            <div class="m"><b>0</b><span>frontend deps</span></div>
+            <div class="m"><b>3</b><span>pipeline nodes</span></div>
+            <div class="m"><b>0</b><span>identity drift</span></div>
+          </div>
+          <div class="chips">
+            <span class="chip">Vanilla JS</span><span class="chip">ComfyUI API</span>
+            <span class="chip">WebSocket</span><span class="chip">CatVTON</span>
+            <span class="chip">DeepLabV3+</span><span class="chip">Stable Diffusion</span>
+            <span class="chip">Inpainting</span>
+          </div>
+          <div class="feature-links">
+            <a class="link-arrow" href="projects/drape.html">
+              Read the write-up
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <div class="more-note reveal">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        <p>
+          More write-ups in progress — NAS build (Samba / Syncthing / Immich), automated
+          backups, and version-pinned container updates are next on the bench.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ CONTACT ============ -->
+    <section id="contact">
+      <div class="contact-box reveal">
+        <p class="hero-kicker">04. What's next</p>
+        <h2>Let's talk<span class="grad-text">.</span></h2>
+        <p>
+          Whether it's infrastructure, homelabs, or an opportunity you think I'd fit —
+          my inbox is open.
+        </p>
+        <div class="contact-actions">
+          <a class="btn btn-primary" href="mailto:kimpiskaw@gmail.com">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+            kimpiskaw@gmail.com
+          </a>
+          <a class="btn btn-outline" href="https://github.com/kimskaw" target="_blank" rel="noopener">GitHub ↗</a>
+        </div>
+      </div>
+    </section>
+
   </div>
+</main>
 
-  <footer class="site-footer">
-    <div>© Kim Pi Skaw · Built by hand, no frameworks, no trackers.</div>
-    <div class="foot-links">
-      <a href="https://github.com/kimskaw" target="_blank" rel="noopener">github.com/kimskaw</a>
-      <a href="mailto:kimpiskaw@gmail.com">kimpiskaw@gmail.com</a>
-    </div>
-  </footer>
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>© <span id="year">2026</span> Kim Pi Skaw · Hand-built, no trackers.</span>
+    <a href="https://github.com/kimskaw/kimskaw.github.io" target="_blank" rel="noopener">view source ↗</a>
+  </div>
+</footer>
 
-</div>
+<script src="assets/js/main.js"></script>
 </body>
 </html>

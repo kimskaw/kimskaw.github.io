@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRAPE — Browser-Based AI Virtual Try-On — Kim Pi Skaw</title>
+<meta name="description" content="DRAPE fits any garment onto a person while preserving their face, pose, and background — a static frontend driving a local ComfyUI CatVTON pipeline over HTTP + WebSocket.">
+<script>if (localStorage.getItem("theme") === "light") document.documentElement.setAttribute("data-theme", "light");</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>👗</text></svg>">
+<style>
+  /* scoped: try-on before/after galleries */
+  .tryon {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 14px;
+    margin: 1.6rem 0;
+  }
+  .tryon figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .tryon figure.is-result { border-color: var(--brand-1); }
+  .tryon img { display: block; width: 100%; height: 320px; object-fit: cover; object-position: top center; }
+  .tryon figcaption {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    color: var(--text-dim);
+    padding: 8px 10px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .tryon figure.is-result figcaption { color: var(--brand-1); }
+  .tryon .op {
+    font-family: var(--mono);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-faint);
+    text-align: center;
+  }
+  @media (max-width: 760px) {
+    .tryon { grid-template-columns: 1fr; }
+    .tryon .op { transform: rotate(90deg); padding: 2px 0; }
+    .tryon img { height: 260px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-fx" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html" aria-label="Kim Pi Skaw — home">
+      <span class="mark">ks</span>kimskaw
+    </a>
+    <nav aria-label="Main">
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html#about">About</a></li>
+        <li><a href="../index.html#skills">Skills</a></li>
+        <li><a href="../index.html#projects" class="active">Projects</a></li>
+        <li><a href="../index.html#contact">Contact</a></li>
+        <li><a class="nav-cta" href="https://github.com/kimskaw" target="_blank" rel="noopener">GitHub ↗</a></li>
+      </ul>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle color theme">
+        <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button class="icon-btn nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="article-wrap article">
+
+  <header class="article-hero">
+    <div>
+      <span class="eyebrow">AI · Frontend · Write-up</span>
+      <h1>DRAPE — Browser-Based AI Virtual Try-On</h1>
+      <p class="lede">
+        Drop in a photo of a garment and a photo of a person, and DRAPE renders that person
+        <strong>wearing</strong> it — keeping their face, body, pose, and background untouched.
+        A pure static frontend driving a local AI pipeline over HTTP and WebSocket.
+      </p>
+      <div class="article-meta">
+        <span>Personal AI project</span>
+        <span>Vanilla JS · ComfyUI · CatVTON</span>
+      </div>
+      <div class="tags">
+        <span class="chip">Vanilla JS</span>
+        <span class="chip">ComfyUI API</span>
+        <span class="chip">WebSocket</span>
+        <span class="chip">CatVTON</span>
+        <span class="chip">DeepLabV3+</span>
+        <span class="chip">Stable Diffusion</span>
+        <span class="chip">Inpainting</span>
+        <span class="chip">No framework</span>
+      </div>
+    </div>
+    <div class="frame">
+      <img src="../assets/img/drape-hero.png" alt="A model on a runway wearing a garment fitted by DRAPE">
+    </div>
+  </header>
+
+  <div class="prose">
+  <p>
+    Virtual try-on tools usually cheat: they regenerate the whole image, and the person who
+    comes out the other side has a different face, a different body, and a different pose than
+    the one who went in. DRAPE doesn't. It masks <em>only</em> the clothing region on the real
+    photo and repaints the garment into it — so identity, proportions, and background are
+    preserved by construction, not by luck.
+  </p>
+  <p>
+    The whole thing is a single static page — HTML, CSS, and vanilla JavaScript, no framework
+    and no build step. The browser talks directly to a local
+    <a href="https://github.com/comfyanonymous/ComfyUI" target="_blank" rel="noopener">ComfyUI</a>
+    server, building the AI workflow graph on the fly and orchestrating the entire run itself.
+    Below is what it does, how the pipeline works, and — the honest part — what it took to get
+    the AI stack actually running on Windows.
+  </p>
+  </div>
+
+  <h2>See it work</h2>
+  <p>
+    Same person, same pose, same street corner — only the shirt changes. The reference garment
+    is a flat-lay photo; DRAPE fits it onto the model without touching the face, cap, jewelry,
+    or background.
+  </p>
+
+  <div class="tryon">
+    <figure>
+      <img src="../assets/img/drape-model-1.jpg" alt="Original photo of a person">
+      <figcaption><span>MODEL</span><span>input</span></figcaption>
+    </figure>
+    <div class="op">+</div>
+    <figure>
+      <img src="../assets/img/drape-garment-1.jpg" alt="Flat-lay photo of a graphic t-shirt">
+      <figcaption><span>GARMENT</span><span>input</span></figcaption>
+    </figure>
+    <div class="op">=</div>
+    <figure class="is-result">
+      <img src="../assets/img/drape-result-1.png" alt="The person wearing the new t-shirt">
+      <figcaption><span>RESULT</span><span>generated</span></figcaption>
+    </figure>
+  </div>
+
+  <p>
+    It works the same for a "worn" reference — here a green top photographed on one person is
+    transferred onto another, keeping her hair, hands, and studio backdrop exactly as shot:
+  </p>
+
+  <div class="tryon">
+    <figure>
+      <img src="../assets/img/drape-garment-2.png" alt="A green top worn by a model">
+      <figcaption><span>GARMENT</span><span>input</span></figcaption>
+    </figure>
+    <div class="op">→</div>
+    <figure class="is-result" style="grid-column: span 3;">
+      <img src="../assets/img/drape-result-2.png" alt="A different person wearing the green top" style="height:420px;">
+      <figcaption><span>RESULT</span><span>generated · identity &amp; pose preserved</span></figcaption>
+    </figure>
+  </div>
+
+  <h2>What it does</h2>
+  <p>The workflow is deliberately simple — three steps:</p>
+  <ul>
+    <li>
+      <strong>Upload a garment</strong> (required) — a flat lay, mannequin, or worn photo.
+      Tag it as <strong>Top</strong>, <strong>Bottom</strong>, or <strong>Full</strong> outfit.
+    </li>
+    <li>
+      <strong>Upload a model</strong> (optional) — a full-body photo of the person. Skip it and
+      it falls back to a built-in default model.
+    </li>
+    <li>
+      <strong>Generate</strong> — the AI masks the clothing region on the person and inpaints the
+      reference garment into it. Results appear in a grid, downloadable individually or as a batch.
+    </li>
+  </ul>
+  <p>
+    The details that make it feel finished: drag-and-drop and clipboard paste for uploads, a live
+    server-status indicator, a real progress bar wired to the model's per-step callbacks,
+    cancel/reset that also clears the backend queue, and cross-origin blob downloads so "Save"
+    works even though the images come from a different server.
+  </p>
+
+  <h2>How it works under the hood</h2>
+  <p>
+    DRAPE is a <strong>pure static frontend</strong> — no framework, no bundler. All the heavy
+    lifting happens on the local ComfyUI server, which the browser drives over HTTP and WebSocket.
+    The frontend builds a ComfyUI workflow graph on the fly and submits it:
+  </p>
+
+  <div class="table-scroll">
+  <table>
+    <tr><th>Node</th><th>Role</th></tr>
+    <tr><td><code>LayerMask: HumanPartsUltra</code></td><td>DeepLabV3+ human-parsing model that produces a precise clothing mask on the person</td></tr>
+    <tr><td><code>CatVTONWrapper</code></td><td>The try-on itself — inpaints the reference garment into the masked region</td></tr>
+    <tr><td><code>SaveImage</code></td><td>Writes the final result</td></tr>
+  </table>
+  </div>
+
+  <p>
+    The <strong>Top / Bottom / Full</strong> toggle simply flips which body-part masks the parsing
+    node turns on (its <code>top_clothes</code> / <code>bottom_clothes</code> booleans) — the rest
+    of the graph is unchanged.
+  </p>
+
+  <h3>Why CatVTON, and not full image generation</h3>
+  <p>
+    The project started on a <strong>Qwen-Image-Edit</strong> two-stage LoRA graph — extract the
+    outfit, then transfer it. It worked, but because it regenerated the whole scene, faces and
+    body proportions drifted. Switching to <strong>CatVTON</strong> fixed it: it masks the garment
+    region on the <em>actual person photo</em> and inpaints only that region. Everything outside the
+    mask is never touched, so identity, pose, and background survive by construction. The old Qwen
+    approach is archived in the repo.
+  </p>
+
+  <h3>The API flow</h3>
+  <p>The browser orchestrates the entire run itself:</p>
+  <ul>
+    <li><strong>Upload</strong> — each image is POSTed to <code>/upload/image</code> with a unique timestamped name.</li>
+    <li><strong>Queue</strong> — the generated workflow is submitted to <code>/prompt</code> with a per-session <code>client_id</code>.</li>
+    <li><strong>Live progress</strong> — a WebSocket to <code>/ws</code> streams <code>executing</code> and <code>progress</code> events; the UI advances the bar and updates each step's status in real time.</li>
+    <li><strong>Fetch results</strong> — once the graph finishes, it polls <code>/history/{promptId}</code> and pulls output images from <code>/view</code>.</li>
+    <li><strong>Cancel / reset</strong> — aborts in-flight fetches and calls <code>/interrupt</code> + <code>/queue {clear:true}</code> so the server stops too.</li>
+  </ul>
+
+  <h2>Tech stack</h2>
+  <div class="table-scroll">
+  <table>
+    <tr><th>Layer</th><th>What</th></tr>
+    <tr><td>Frontend</td><td>Vanilla HTML / CSS / JavaScript — no framework, no bundler</td></tr>
+    <tr><td>Backend</td><td>Local ComfyUI server, driven entirely over its HTTP + WebSocket API</td></tr>
+    <tr><td>Models</td><td>DeepLabV3+ human parsing + CatVTON try-on, built on SD1.5-inpainting</td></tr>
+    <tr><td>Launcher</td><td>A Windows <code>.bat</code> that boots ComfyUI (CORS on), serves the UI on <code>:5500</code>, and opens the browser</td></tr>
+  </table>
+  </div>
+
+  <h2>Challenges &amp; what it took to fix</h2>
+  <p>
+    Getting the CatVTON stack running on Windows is where the real work was. A demo GIF hides
+    all of this; a tool that actually runs can't.
+  </p>
+
+  <div class="pair-grid">
+  <div class="card">
+    <span class="tag">Challenge</span>
+    <h4>ComfyUI insisted a node was "missing" that was clearly installed</h4>
+    <p>
+      <code>CatVTONWrapper</code> showed up as a missing node even though the pack was on disk.
+      "Missing" was a lie — the node was <strong>throwing during import</strong>. Importing the pack
+      by hand with ComfyUI's own Python surfaced the real traceback:
+      <code>cannot import name 'cached_download' from 'huggingface_hub'</code>.
+    </p>
+  </div>
+  <div class="card lesson">
+    <span class="tag">Lesson</span>
+    <h4>A "missing custom node" is almost always an import crash</h4>
+    <p>
+      Root cause was a version skew — an old <code>diffusers 0.27.2</code> importing a symbol that a
+      newer <code>huggingface_hub</code> had removed, which quietly breaks <em>every</em> diffusers-based
+      node. Fix was one line (<code>pip install -U diffusers</code>). The reusable move: import the pack
+      manually to get the true traceback before touching the node itself.
+    </p>
+  </div>
+  </div>
+
+  <div class="pair-grid">
+  <div class="card">
+    <span class="tag">Challenge</span>
+    <h4>The first CatVTON pack led straight into a compile dead end</h4>
+    <p>
+      It pulled in <code>detectron2</code> and DensePose built from git source — which on Windows
+      needs a matching C++ compiler and CUDA toolchain and reliably fails to build. Hours could
+      disappear into chasing compiler errors that were never going to resolve.
+    </p>
+  </div>
+  <div class="card lesson">
+    <span class="tag">Lesson</span>
+    <h4>Swap the dependency, don't fight the compiler</h4>
+    <p>
+      Instead of trying to force the build, I switched to a pack where masking is a <em>separate</em>
+      node — sidestepping detectron2 and the entire C++/CUDA build. When a Windows-hostile native
+      dependency shows up in a pack's requirements, the fastest fix is usually a different pack, not
+      a working toolchain.
+    </p>
+  </div>
+  </div>
+
+  <div class="pair-grid">
+  <div class="card">
+    <span class="tag">Challenge</span>
+    <h4>The model weights weren't downloadable in any scriptable way</h4>
+    <p>
+      The wrapper loads all its weights <strong>locally</strong>, and the author only shipped the
+      attention weights via Baidu / Google Drive links — no clean automated pull. The base
+      SD1.5-inpaint UNet and VAE weren't even in the same repo.
+    </p>
+  </div>
+  <div class="card lesson">
+    <span class="tag">Lesson</span>
+    <h4>Reassemble the weights from first principles</h4>
+    <p>
+      I scripted a Hugging Face <code>snapshot_download</code> that pulls the SD1.5-inpaint UNet, the
+      VAE, and the CatVTON attention weights separately, then lays them out in the exact directory
+      structure the node expects to load. One repeatable script instead of a pile of manual
+      cloud-drive downloads.
+    </p>
+  </div>
+  </div>
+
+  <div class="pair-grid">
+  <div class="card">
+    <span class="tag">Challenge</span>
+    <h4>The browser frontend couldn't reach the server at all</h4>
+    <p>
+      With the frontend on <code>:5500</code> and ComfyUI on <code>:8188</code>, every request was a
+      cross-origin call — and the browser blocked all of them. The UI looked done but couldn't upload,
+      queue, or fetch a single thing.
+    </p>
+  </div>
+  <div class="card lesson">
+    <span class="tag">Lesson</span>
+    <h4>CORS is mandatory, and it's a launch flag</h4>
+    <p>
+      ComfyUI has to be started with <code>--enable-cors-header "*"</code> or the browser refuses to
+      talk to it. Downloads of the generated images needed the same care — they're fetched as blobs
+      from a different origin, then handed to the browser's save flow so "Save" works despite the
+      cross-origin boundary.
+    </p>
+  </div>
+  </div>
+
+  <h2>Where things stand</h2>
+  <div class="stats">
+    <div class="stat">
+      <div class="label">Pipeline nodes</div>
+      <div class="value"><span class="after">3</span></div>
+    </div>
+    <div class="stat">
+      <div class="label">Frontend dependencies</div>
+      <div class="value"><span class="after">0</span></div>
+    </div>
+    <div class="stat">
+      <div class="label">Identity / pose drift</div>
+      <div class="value"><span class="before">Qwen: yes</span><span class="arrow">→</span><span class="after">none</span></div>
+    </div>
+    <div class="stat">
+      <div class="label">Outfit regions</div>
+      <div class="value"><span class="after">top · bottom · full</span></div>
+    </div>
+  </div>
+
+  <div class="prose">
+  <h2>Why this matters</h2>
+  <p>
+    The frontend is intentionally boring — vanilla JS, no framework — because the interesting
+    engineering was everywhere else: choosing a model architecture that preserves what the user
+    cares about instead of one that looks impressive in a demo, orchestrating an async AI pipeline
+    from the browser over HTTP and WebSocket, and getting a research-grade Python stack to run
+    reliably on a hostile platform. That last part — reading past a misleading "missing node"
+    error to the real import crash underneath, swapping a dependency instead of fighting a
+    doomed native build, and scripting a reproducible weight assembly — is the same debugging
+    judgment that separates something that runs on one machine from something that runs.
+  </p>
+
+  <div class="resume-box">
+    <h4>Resume line</h4>
+    <p style="margin:0;">
+      Built a browser-based AI virtual try-on tool (vanilla JS frontend orchestrating a local
+      ComfyUI CatVTON + DeepLabV3+ inpainting pipeline over HTTP/WebSocket) that fits arbitrary
+      garments onto people while preserving identity, pose, and background; debugged and stabilized
+      the Python/diffusers model stack on Windows, replacing a detectron2 build dead end and
+      scripting a reproducible weight assembly.
+    </p>
+  </div>
+
+  <p style="margin-top:2.5rem;">
+    <a class="link-arrow" href="../index.html#projects">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg);"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      Back to all projects
+    </a>
+  </p>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>© <span id="year">2026</span> Kim Pi Skaw · Hand-built, no trackers.</span>
+    <a href="https://github.com/kimskaw/kimskaw.github.io" target="_blank" rel="noopener">view source ↗</a>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>
