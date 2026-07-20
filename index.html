@@ -264,11 +264,45 @@
         </div>
       </article>
 
+      <article class="feature-card reveal">
+        <div class="feature-media">
+          <img src="assets/img/pi.jpg" alt="Raspberry Pi 4 running a self-hosted media server">
+        </div>
+        <div class="feature-body">
+          <p class="feature-tag">Project · Write-up</p>
+          <h3><a href="projects/nas-media.html">A Self-Hosted Media Server on a Raspberry Pi</a></h3>
+          <p>
+            The Pi's spare storage became a Jellyfin media server — direct-play to Apple TV,
+            an automated library that organises and subtitles itself, and a custom drop-folder
+            ingest pipeline. Plus the honest part: downloads that never imported, a whole
+            library invisible over a one-word path typo, and playback that failed for a reason
+            that had nothing to do with the file.
+          </p>
+          <div class="feature-metrics">
+            <div class="m"><b>7</b><span>services</span></div>
+            <div class="m"><b>0</b><span>exposed ports</span></div>
+            <div class="m"><b>-85%</b><span>grab size</span></div>
+          </div>
+          <div class="chips">
+            <span class="chip">Jellyfin</span><span class="chip">Docker Compose</span>
+            <span class="chip">FFmpeg</span><span class="chip">Bash</span>
+            <span class="chip">SQLite</span><span class="chip">REST APIs</span>
+            <span class="chip">cron</span>
+          </div>
+          <div class="feature-links">
+            <a class="link-arrow" href="projects/nas-media.html">
+              Read the write-up
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
+        </div>
+      </article>
+
       <div class="more-note reveal">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
         <p>
-          More write-ups in progress — NAS build (Samba / Syncthing / Immich), automated
-          backups, and version-pinned container updates are next on the bench.
+          More write-ups in progress — offsite backups, version-pinned container updates, and
+          a single-mount storage refactor are next on the bench.
         </p>
       </div>
     </section>

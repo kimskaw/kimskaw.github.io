@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net" version="24.0.0">
+  <diagram name="NAS media flow" id="nasflow01">
+    <mxGraphModel dx="900" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Raspberry Pi Media Stack — request to playback" style="text;html=1;fontSize=16;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="420" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- main pipeline -->
+        <mxCell id="u" value="User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="320" y="70" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="js" value="Jellyseerr&#10;(request UI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="320" y="150" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="sr" value="Sonarr / Radarr&#10;(TV / movie automation)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="320" y="230" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="pr" value="Prowlarr&#10;(indexer search)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="320" y="310" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="qb" value="qBittorrent&#10;(download client)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="320" y="390" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dl" value="/media/downloads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="320" y="470" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="imp" value="Import + Rename&#10;(Sonarr / Radarr)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="320" y="540" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="lib" value="Library&#10;/media/Movies  ·  /media/Shows" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="620" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="jf" value="Jellyfin&#10;(media server / library)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" vertex="1" parent="1">
+          <mxGeometry x="320" y="720" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cl" value="Apple TV  ·  iPhone&#10;(Jellyfin app / Infuse)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="320" y="800" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- subtitles -->
+        <mxCell id="bz" value="Bazarr&#10;(subtitles)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" vertex="1" parent="1">
+          <mxGeometry x="590" y="625" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- manual ingest branch -->
+        <mxCell id="dz" value="SFTP dropzone&#10;/media/dropzone" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="470" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ing" value="ingest.sh (cron */3)&#10;Dolby to AAC · rename · file · subs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="550" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- backups branch -->
+        <mxCell id="bk" value="backup-stack.sh&#10;(cron 04:00)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="590" y="390" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="tar" value="config backup .tar.gz&#10;/mnt/external/backups" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="590" y="470" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- storage note -->
+        <mxCell id="storage" value="Storage: external WD drive (NTFS), auto-mounted by UUID at /mnt/external. Holds downloads + Movies/Shows. App config + DBs on the Pi SSD." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="690" width="230" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- access note -->
+        <mxCell id="net" value="LAN / Tailscale only — 0 ports exposed to the internet" style="text;html=1;align=left;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="320" y="880" width="300" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- edges main -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="u" target="js"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" value="request" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="js" target="sr"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="search" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="sr" target="pr"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="grab" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="pr" target="qb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="qb" target="dl"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" value="path-mapped" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="dl" target="imp"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="imp" target="lib"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" value="scan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="lib" target="jf"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" value="direct play" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="jf" target="cl"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- edges branches -->
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="dz" target="ing"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" value="manual uploads" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="ing" target="lib"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" value="subtitles" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="bz" target="lib"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="bk" target="tar"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
