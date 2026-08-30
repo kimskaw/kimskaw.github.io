@@ -1,0 +1,1241 @@
+<!doctype html>
+<html lang="en" data-page="probative">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Probative: An LLM Triage Pipeline That Doesn't Trust Its Own Model | Kim Pi Skaw</title>
+<meta name="description" content="A local SOC triage pipeline: rules decide which alerts deserve attention, one local model explains the evidence, code checks every figure it cited, and a second model judges whether the explanation holds.">
+<link rel="canonical" href="https://kimskaw.github.io/projects/probative.html">
+<meta name="theme-color" content="#1d2021" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fbf1c7" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://kimskaw.github.io/projects/probative.html">
+<meta property="og:title" content="Probative: An LLM Triage Pipeline That Doesn't Trust Its Own Model">
+<meta property="og:description" content="Rules decide which alerts deserve attention. One local model explains the evidence, code checks every figure it cited, and a second model that never sees the first one's reasoning judges whether the explanation holds.">
+<meta property="og:image" content="https://kimskaw.github.io/assets/img/probative-system.webp">
+<meta name="twitter:card" content="summary_large_image">
+<script>
+  document.documentElement.className += " js";
+    (function () {
+    var t = localStorage.getItem("theme");
+    if (!t) t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    if (t === "light") document.documentElement.setAttribute("data-theme", "light");
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400..800&display=swap" rel="stylesheet">
+<style>
+
+  .pd-root {
+    --bg:#f0f3f4; --card:#ffffff; --ink:#1a2226; --muted:#59696f;
+    --border:#d7dfe2; --border-strong:#b9c5c9;
+    --accent-teal:#0c7686; --accent-teal-dim:#dbeef1;
+    --accent-amber:#a2650f; --accent-amber-dim:#f6e6cf;
+    --accent-green:#267a52; --accent-green-dim:#e2f2e9;
+    --accent-red:#b3372c; --accent-red-dim:#f8e6e3;
+    --accent-violet:#6b4ea8; --accent-violet-dim:#e9e3f6;
+    --example-bg:#eef2f3;
+  }
+  @media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .pd-root, body:not([data-theme="light"]) .pd-root, .pd-root:not([data-theme="light"]) {
+      --bg:#10171a; --card:#182124; --ink:#e8eef0; --muted:#93a5ab;
+      --border:#2b363a; --border-strong:#3c4a4f;
+      --accent-teal:#55c6d6; --accent-teal-dim:#1c343a;
+      --accent-amber:#e3a750; --accent-amber-dim:#3a2c17;
+      --accent-green:#6bd39d; --accent-green-dim:#14301f;
+      --accent-red:#e57468; --accent-red-dim:#35201c;
+      --accent-violet:#b49ae8; --accent-violet-dim:#241d38;
+      --example-bg:#0d1416;
+    }
+  }
+  :root[data-theme="dark"] .pd-root, body[data-theme="dark"] .pd-root, .pd-root[data-theme="dark"] {
+    --bg:#10171a; --card:#182124; --ink:#e8eef0; --muted:#93a5ab;
+    --border:#2b363a; --border-strong:#3c4a4f;
+    --accent-teal:#55c6d6; --accent-teal-dim:#1c343a;
+    --accent-amber:#e3a750; --accent-amber-dim:#3a2c17;
+    --accent-green:#6bd39d; --accent-green-dim:#14301f;
+    --accent-red:#e57468; --accent-red-dim:#35201c;
+    --accent-violet:#b49ae8; --accent-violet-dim:#241d38;
+    --example-bg:#0d1416;
+  }
+  .pd-root, .pd-root * { box-sizing:border-box; }
+  .pd-root { margin:0; background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; padding:0; }
+  .pd-root > .pd-inner { max-width:1120px; margin:0 auto; }
+  .pd-root code { font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:0.92em; }
+  .pd-root .pd-eyebrow { font-family:"IBM Plex Mono",monospace; font-size:12.5px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--accent-teal); margin:0 0 10px; }
+  .pd-root h1 { font-size:clamp(26px,4vw,36px); font-weight:700; line-height:1.14;
+    letter-spacing:-0.01em; margin:0 0 12px; text-wrap:balance; }
+  .pd-root .pd-lede { color:var(--muted); font-size:15.5px; line-height:1.62; max-width:66ch; margin:0 0 26px; }
+  .pd-root .pd-lede strong { color:var(--ink); font-weight:600; }
+  .pd-root .pd-key { display:flex; flex-wrap:wrap; gap:8px 18px; margin:0 0 34px; padding:14px 16px;
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted); }
+  .pd-root .pd-key span { display:flex; align-items:center; gap:7px; }
+  .pd-root .pd-key i { width:13px; height:13px; border-radius:3px; display:inline-block; border:1.5px solid; }
+  .pd-root .pd-k-data { background:var(--card); border-color:var(--accent-teal); }
+  .pd-root .pd-k-rule { background:var(--card); border-color:var(--accent-amber); border-style:dashed; }
+  .pd-root .pd-k-llm  { background:var(--accent-violet-dim); border-color:var(--accent-violet); }
+  .pd-root .pd-k-det  { background:var(--accent-green-dim); border-color:var(--accent-green); }
+  .pd-root .pd-k-drop { background:var(--card); border-color:var(--accent-red); border-style:dashed; }
+  .pd-root figure { margin:0; }
+  .pd-root figure svg { width:100%; height:auto; overflow:visible; color:var(--border-strong); }
+  .pd-root .pd-box { fill:var(--card); stroke:var(--border-strong); }
+  .pd-root .pd-box.pd-data { stroke:var(--accent-teal); }
+  .pd-root .pd-box.pd-rule { stroke:var(--accent-amber); stroke-dasharray:5 3; }
+  .pd-root .pd-box.pd-det  { fill:var(--accent-green-dim); stroke:var(--accent-green); }
+  .pd-root .pd-box.pd-llm  { fill:var(--accent-violet-dim); stroke:var(--accent-violet); stroke-width:2; }
+  .pd-root .pd-box.pd-gate { fill:var(--accent-teal-dim); stroke:var(--accent-teal); }
+  .pd-root .pd-box.pd-out  { fill:var(--accent-amber-dim); stroke:var(--accent-amber); }
+  .pd-root .pd-box.pd-drop { fill:var(--card); stroke:var(--accent-red); stroke-dasharray:4 3; }
+  .pd-root .pd-box.pd-dead { fill:var(--card); stroke:var(--border); stroke-dasharray:3 3; }
+  .pd-root .pd-box.pd-human{ fill:var(--example-bg); stroke:var(--accent-teal); stroke-dasharray:3 2; }
+  .pd-root text.pd-t { fill:var(--ink); font-family:"IBM Plex Sans",sans-serif; }
+  .pd-root text.pd-s { fill:var(--muted); font-family:"IBM Plex Mono",monospace; }
+  .pd-root text.pd-al { fill:var(--muted); font-family:"IBM Plex Mono",monospace; }
+  .pd-root text.pd-al.pd-no { fill:var(--accent-red); }
+  .pd-root text.pd-al.pd-ok { fill:var(--accent-green); }
+  .pd-root text.pd-tech { font-family:"IBM Plex Mono",monospace; font-weight:600; fill:var(--accent-teal); }
+  .pd-root text.pd-tech.pd-rule { fill:var(--accent-amber); }
+  .pd-root text.pd-tech.pd-llm { fill:var(--accent-violet); }
+  .pd-root text.pd-lbl { font-family:"IBM Plex Mono",monospace; font-weight:600; letter-spacing:0.055em; }
+  /* Connectors cross band headers and arrow labels. A background-coloured
+     halo under the glyphs lets a line read as passing behind the label
+     rather than through it; `paint-order` keeps the halo beneath the
+     letterforms. Only works where the text is painted after the line,
+     which is why these elements sit at the end of the SVG. */
+  .pd-root text.pd-lbl, text.pd-haloed { paint-order:stroke fill; stroke:var(--bg);
+    stroke-width:3.5px; stroke-linejoin:round; }
+  .pd-root figcaption { margin-top:26px; font-size:13.5px; color:var(--muted); line-height:1.65; max-width:76ch; text-align:left; }
+  .pd-root figcaption strong { color:var(--ink); font-weight:600; }
+  .pd-root figcaption p { margin:0 0 12px; }
+</style>
+
+<link rel="stylesheet" href="../assets/css/style.css?v=108">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🛰️</text></svg>">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="bg-fx" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="../index.html" aria-label="Kim Pi Skaw, home">
+      <span class="mark">ks</span>kimskaw
+    </a>
+    <nav aria-label="Main">
+      <ul class="nav-links" id="nav-links">
+        <li><a href="../index.html#work" class="active">Work</a></li>
+        <li><a href="../index.html#stack">Stack</a></li>
+        <li><a href="../index.html#contact">Contact</a></li>
+        <li><a class="nav-cta" href="https://github.com/kimskaw" target="_blank" rel="noopener">GitHub ↗</a></li>
+      </ul>
+    </nav>
+    <div class="nav-tools">
+      <button class="icon-btn" id="theme-toggle" aria-label="Switch to light theme" aria-pressed="false">
+        <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button class="icon-btn nav-burger" id="nav-burger" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="article-wrap article" id="main">
+
+  <a class="back-link" href="../index.html#work"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>All work</a>
+
+  <header class="article-hero">
+    <div>
+      <span class="eyebrow">AI Verification · Detection Engineering · Write-up</span>
+      <h1>Probative: An LLM Triage Pipeline That Doesn't Trust Its Own Model</h1>
+      <p class="lede">
+        A local research prototype, not a deployed security tool. It asks one narrow question: when a
+        language model writes up a security alert, can its findings be checked instead of trusted?
+        Detection is the deliberately simple front-end, a set of rules whose recall is low (41.7%),
+        because the work is what happens after a finding is written, where code and a second model try
+        to prove it wrong.
+      </p>
+      <p class="lede">
+        <em>Probative</em> is the evidential standard it holds the model to: a claim counts only if
+        the evidence actually supports it. It runs on captured honeypot traffic (a honeypot is a decoy
+        server attackers probe) and synthetic endpoint telemetry, not a live network.
+      </p>
+      <div class="article-meta">
+        <span>Personal detection-engineering project</span>
+        <span>Python · fully local, no cloud inference</span>
+      </div>
+      <div class="tags">
+        <span class="chip">Sigma</span>
+        <span class="chip">MITRE ATT&amp;CK</span>
+        <span class="chip">Detection Engineering</span>
+        <span class="chip">Local LLMs</span>
+        <span class="chip">RAG / hybrid retrieval</span>
+        <span class="chip">Prompt-injection defence</span>
+        <span class="chip">Pydantic AI</span>
+        <span class="chip">SQLite</span>
+        <span class="chip">Cowrie honeypot</span>
+        <span class="chip">Wazuh</span>
+      </div>
+    </div>
+    <div class="term" aria-hidden="true">
+      <div class="term-bar"><i></i><i></i><i></i><span>kim@probative: ~</span></div>
+      <div class="term-body">
+        <span class="ln"><span class="p">$</span> <span class="cmd">python -m orchestrator.loop</span></span>
+        <span class="ln out">─────────────────────────────</span>
+        <span class="ln out">detect   <span class="hl">sigma rules</span> &middot; severity in code</span>
+        <span class="ln out">model    one LLM &middot; 3 read-only tools</span>
+        <span class="ln out">pass a   code re-checks every figure <span class="ok">●</span></span>
+        <span class="ln out">pass b   a second AI model verifies it <span class="ok">●</span></span>
+        <span class="ln out">verdict  <span class="hl-green">reported</span>, or handed to a human</span>
+        <span class="ln out">no daemon &middot; polls and exits &middot; cron</span>
+        <span class="ln"><span class="p">$</span> <span class="caret"></span></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="prose">
+  <p>
+    Everything runs locally on one machine, and no security data ever leaves the host for cloud
+    inference.
+  </p>
+  </div>
+
+  <div class="keypanel">
+    <p class="kp-label">In short</p>
+    <ul>
+      <li><b>The problem.</b> An LLM triaging a security alert writes fluent, confident prose whether or not any of it is true.</li>
+      <li><b>The approach.</b> Structure over prompting: the model only explains what the evidence shows, and code or a second model makes every decision that carries consequences.</li>
+      <li><b>What holds up.</b> A model-free check catches 13 of 13 hand-crafted fabrications, refuses 89 of 90 fabricated counts, and wrongly rejects 0 of 9 genuine findings. Whether the second, model-based pass earns its cost is still being measured, and the answer may be no. And I found a flaw in my own testing method and rebuilt it.</li>
+      <li><b>Stated plainly.</b> Just 64 investigated cases so far, and detection recall is 41.7%. Every number here rests on a small operational history, reported rather than rounded, not a production estate.</li>
+    </ul>
+  </div>
+
+  <p class="sec-kicker"><span class="kn">01</span> Design</p>
+  <h2>What it does</h2>
+  <ul>
+    <li>
+      <strong>Collects and normalises</strong>: endpoint, honeypot, and multi-host logs, all behind
+      one adapter interface (Sysmon via Loki, an isolated SSH honeypot, Wazuh as a multi-host
+      collector). The event store is append-only, so re-reading the same time window changes nothing.
+    </li>
+    <li>
+      <strong>Decides what deserves attention</strong>: nine SQL projections that expose the raw JSON as
+      queryable columns, and 21
+      Sigma rules compiled to SQL, each carrying an ATT&amp;CK technique, a severity and a
+      false-positive note. <strong>Severity is fixed here, before any model runs.</strong> Coverage is
+      deliberately narrow, not a strength to lean on: recall is 41.7%, and the point is not how much
+      these rules catch but what happens to a finding once one fires.
+    </li>
+    <li>
+      <strong>Filters noise in a fixed order, and the order is load-bearing</strong>: allowlist first,
+      then de-duplication by fingerprint, then known-benign classification. The same fingerprint
+      fifty times makes exactly one case.
+    </li>
+    <li>
+      <strong>Investigates with exactly three read-only tools</strong>: the case's events, cached
+      reputation data, the rule's own text. No shell, no filesystem, no network, no writes; a test
+      asserts that list holds those three and nothing else.
+    </li>
+    <li>
+      <strong>Retrieves precedent, without letting it become evidence</strong>: the model can read past
+      cases that already passed verification, found by keyword and by local embedding search with
+      the two rankings fused rather than scored (RAG). It cannot cite them. A claim can only ever
+      cite events from its own case.
+    </li>
+    <li>
+      <strong>Verifies in two passes</strong>: a deterministic pass first, which is authoritative,
+      then a second AI model, the verifier, that must not be the first one.
+    </li>
+    <li>
+      <strong>Records every model call</strong>: one append-only row per LLM call, prompt and
+      response verbatim, so any conclusion stays checkable long after the fact. The full audit trail
+      is section 07.
+    </li>
+  </ul>
+
+  <h3>Where the model is, and is not</h3>
+  <p>
+    Only two stages in the whole pipeline are an LLM, and neither can open a case, set a severity,
+    or write to the evidence store.
+  </p>
+
+  <div class="table-scroll">
+  <table>
+    <tr><th>Stage</th><th>Decides</th><th>Mechanism</th></tr>
+    <tr><td>Detection</td><td>What is worth looking at</td><td>Sigma rules compiled to SQL</td></tr>
+    <tr><td>Noise filter</td><td>What is dropped before any cost</td><td>Ordered deterministic rules</td></tr>
+    <tr><td><strong>Investigator</strong></td><td><strong>Nothing, only explains</strong></td><td><code>qwen3.8:27b</code>, three read-only tools</td></tr>
+    <tr><td>Write guards</td><td>Whether the finding persists at all</td><td>Pydantic schema + cited-event existence</td></tr>
+    <tr><td>Pass A</td><td>Whether every cited figure appears in the evidence</td><td>Deterministic, no model call</td></tr>
+    <tr><td><strong>Pass B</strong></td><td><strong>Whether the claim follows</strong></td><td>A second AI model, the verifier: <code>gemma4:26b</code>, must differ from A</td></tr>
+    <tr><td>Human</td><td>The verdict on anything the pipeline will not close</td><td>Analyst console</td></tr>
+  </table>
+  </div>
+
+  <p>
+    Pass B is kept deliberately ignorant. It sees the raw events and the single claim being
+    judged, and nothing else: not the investigator's summary, not its reasoning, not how confident
+    it was, not the past cases that were retrieved. Any of those would tempt it to agree instead of
+    check. A high confidence score is a reason to look harder, never a reason to believe.
+  </p>
+
+  <p class="sec-kicker"><span class="kn">02</span> Architecture</p>
+  <h2>The architecture, end to end</h2>
+  <p>
+    The same map as a diagram, from a log line to a recorded verdict. Everything above the two
+    model calls decides what deserves attention; everything below them is a check the model cannot
+    influence.
+  </p>
+  <p>
+    All inference runs locally: SQLite, Ollama, no message queues, no web framework. Reputation
+    enrichment is the one outbound dependency, and only public indicators leave the host, never
+    event text. Nothing runs as a daemon: every entry point polls and exits with all state in
+    SQLite, so a kill at any moment is safe and cron is the scheduler.
+  </p>
+
+  <div class="pd-root diagram-wide">
+  <div class="pd-key">
+    <span><i class="pd-k-data"></i> stored evidence / data path</span>
+    <span><i class="pd-k-rule"></i> rule &amp; detection logic</span>
+    <span><i class="pd-k-det"></i> deterministic check</span>
+    <span><i class="pd-k-llm"></i> LLM call</span>
+    <span><i class="pd-k-drop"></i> case ends here</span>
+  </div>
+
+  <figure>
+    <svg viewBox="-130 0 1250 2330" role="img" aria-label="The complete Probative pipeline from collection to verdict. Endpoint agent and honeypot collectors write to one append-only evidence store with a content-hash dedup key. Projections expose it to detection rules compiled to SQL, each reading only the events that arrived since it last ran, producing alerts with a severity fixed before any model is involved. Three deterministic noise filters, applied in a fixed order, either close a case or open one. Reputation data for addresses and file hashes is fetched deterministically and cached, never by the model. An investigator model with exactly three read-only tools writes a finding, informed by retrieved precedent and by how much the rule is worth believing. Two write-time guards then a deterministic first verification pass check every citable token against stored evidence. A second, different model judges the prose, with a public knowledge corpus for general-knowledge claims. Passing cases are reported and indexed as precedent, failing ones go to a human. Every model call is recorded.">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="6.5" refY="3.5" orient="auto">
+          <polygon points="0 0, 7 3.5, 0 7" fill="currentColor"/>
+        </marker>
+        <marker id="arRed" markerWidth="9" markerHeight="9" refX="6.5" refY="3.5" orient="auto">
+          <polygon points="0 0, 7 3.5, 0 7" fill="var(--accent-red)"/>
+        </marker>
+        <marker id="arGreen" markerWidth="9" markerHeight="9" refX="6.5" refY="3.5" orient="auto">
+          <polygon points="0 0, 7 3.5, 0 7" fill="var(--accent-green)"/>
+        </marker>
+        <marker id="arViolet" markerWidth="9" markerHeight="9" refX="6.5" refY="3.5" orient="auto">
+          <polygon points="0 0, 7 3.5, 0 7" fill="var(--accent-violet)"/>
+        </marker>
+      </defs>
+
+      <!-- ══════════ BAND 1 · COLLECTION ══════════ -->
+      
+      <rect x="60" y="34" width="290" height="76" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="205" y="56" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">endpoint agent collector</text>
+      <text x="205" y="72" text-anchor="middle" class="pd-s" font-size="9.5">takes every decoded event from the archive</text>
+      <text x="205" y="86" text-anchor="middle" class="pd-s" font-size="9.5">and deliberately not the vendor's own alerts</text>
+      <text x="205" y="101" text-anchor="middle" class="pd-tech" font-size="9">Wazuh archives &middot; Sysmon telemetry</text>
+
+      <rect x="385" y="34" width="290" height="76" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="530" y="56" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">SSH honeypot collector</text>
+      <text x="530" y="72" text-anchor="middle" class="pd-s" font-size="9.5">isolated container, no legitimate users</text>
+      <text x="530" y="86" text-anchor="middle" class="pd-s" font-size="9.5">outbound blocked: tested, not assumed</text>
+      <text x="530" y="101" text-anchor="middle" class="pd-tech" font-size="9">Cowrie &middot; its own container, its own network</text>
+
+      <rect x="710" y="34" width="290" height="76" rx="9" class="pd-box pd-dead" stroke-width="1.5"/>
+      <text x="855" y="56" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">log-shipper collector</text>
+      <text x="855" y="72" text-anchor="middle" class="pd-s" font-size="9.5">queried a log server on a Raspberry Pi</text>
+      <text x="855" y="86" text-anchor="middle" class="pd-s" font-size="9.5">configured and tested, currently idle</text>
+      <text x="855" y="101" text-anchor="middle" class="pd-tech" font-size="9">Loki &middot; kept for the adapter it proves</text>
+
+      <text x="1112" y="70" text-anchor="end" class="pd-al" font-size="9.5" fill="var(--accent-teal)">one shared</text>
+      <text x="1112" y="82" text-anchor="end" class="pd-al" font-size="9.5" fill="var(--accent-teal)">collector</text>
+      <text x="1112" y="94" text-anchor="end" class="pd-al" font-size="9.5" fill="var(--accent-teal)">interface</text>
+
+      <line x1="205" y1="110" x2="205" y2="128" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="530" y1="110" x2="530" y2="128" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="855" y1="110" x2="855" y2="128" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <line x1="205" y1="128" x2="855" y2="128" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="530" y1="128" x2="530" y2="152" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+      
+      <!-- ══════════ BAND 2 · EVIDENCE ══════════ -->
+      <rect x="300" y="158" width="460" height="70" rx="9" class="pd-box pd-gate" stroke-width="2"/>
+      <text x="530" y="180" text-anchor="middle" class="pd-t" font-size="13.5" font-weight="700">the evidence store: append-only, the only truth</text>
+      <text x="530" y="197" text-anchor="middle" class="pd-s" font-size="9.5">a content hash of source, time and raw line means</text>
+      <text x="530" y="211" text-anchor="middle" class="pd-s" font-size="9.5">re-reading a window is a no-op &middot; one commit per row</text>
+      <text x="530" y="224" text-anchor="middle" class="pd-tech" font-size="9">SQLite &middot; resumable after a hard kill</text>
+
+      <rect x="800" y="163" width="200" height="58" rx="8" class="pd-box pd-drop" stroke-width="1.4"/>
+      <text x="900" y="182" text-anchor="middle" class="pd-t" font-size="11.5" font-weight="600">retention purge</text>
+      <text x="900" y="196" text-anchor="middle" class="pd-s" font-size="9">dry by default; deletes on request</text>
+      <text x="900" y="209" text-anchor="middle" class="pd-s" font-size="9" fill="var(--accent-red)">the only way rows leave</text>
+      <line x1="800" y1="192" x2="768" y2="192" stroke="var(--accent-red)" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#arRed)"/>
+
+      <text x="-118" y="180" class="pd-al" font-size="9.5">the stored line</text>
+      <text x="-118" y="193" class="pd-al" font-size="9.5">round-trips byte-</text>
+      <text x="-118" y="206" class="pd-al" font-size="9.5">identical, band 7</text>
+      <text x="-118" y="219" class="pd-al" font-size="9.5">depends on it</text>
+
+      <line x1="530" y1="228" x2="530" y2="266" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- ══════════ BAND 3 · DETECTION ══════════ -->
+      
+      <rect x="60" y="302" width="290" height="84" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="205" y="324" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">nine projections over the raw JSON</text>
+      <text x="205" y="340" text-anchor="middle" class="pd-s" font-size="9.5">process creation &middot; network connection</text>
+      <text x="205" y="353" text-anchor="middle" class="pd-s" font-size="9.5">DNS &middot; file write &middot; honeypot login and command</text>
+      <text x="205" y="366" text-anchor="middle" class="pd-s" font-size="9.5">two arms each, one per JSON shape the sources emit</text>
+      <text x="205" y="379" text-anchor="middle" class="pd-tech" font-size="9">rebuilt from their definition every run</text>
+
+      <rect x="385" y="302" width="290" height="84" rx="9" class="pd-box pd-rule" stroke-width="1.5"/>
+      <text x="530" y="324" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">Sigma rules compiled to SQL</text>
+      <text x="530" y="340" text-anchor="middle" class="pd-s" font-size="9.5">each carries an id, an ATT&amp;CK technique,</text>
+      <text x="530" y="353" text-anchor="middle" class="pd-s" font-size="9.5">a severity, false-positive note, two fixtures</text>
+      <text x="530" y="366" text-anchor="middle" class="pd-s" font-size="9.5">each reads only what arrived since it last ran</text>
+      <text x="530" y="379" text-anchor="middle" class="pd-tech pd-rule" font-size="9">pySigma + SQLite backend &middot; a watermark per rule</text>
+
+      <rect x="710" y="302" width="290" height="84" rx="9" class="pd-box pd-rule" stroke-width="1.5"/>
+      <text x="855" y="324" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">historical back-test</text>
+      <text x="855" y="340" text-anchor="middle" class="pd-s" font-size="9.5">runs each rule over all stored history</text>
+      <text x="855" y="353" text-anchor="middle" class="pd-s" font-size="9.5">measures blast radius; raises no alerts</text>
+      <text x="855" y="366" text-anchor="middle" class="pd-s" font-size="9.5">a rule can be correct and still flood the queue</text>
+      <text x="855" y="379" class="pd-tech pd-rule" font-size="9" text-anchor="middle">measured on the schedule, never inside a request</text>
+
+      <line x1="205" y1="386" x2="205" y2="410" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="530" y1="386" x2="530" y2="410" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="205" y1="410" x2="530" y2="410" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="367" y1="410" x2="367" y2="436" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="367" y1="436" x2="530" y2="436" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="855" y1="386" x2="855" y2="424" stroke="var(--accent-amber)" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <line x1="855" y1="424" x2="770" y2="424" stroke="var(--accent-amber)" stroke-width="1.2" stroke-dasharray="4 3"/>
+
+      <line x1="530" y1="436" x2="530" y2="452" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <rect x="300" y="458" width="460" height="64" rx="9" class="pd-box pd-out" stroke-width="1.5"/>
+      <text x="530" y="480" text-anchor="middle" class="pd-t" font-size="13" font-weight="600">an alert</text>
+      <text x="530" y="496" text-anchor="middle" class="pd-s" font-size="9.5">which rule &middot; how severe &middot; which events &middot; a fingerprint</text>
+      <text x="530" y="512" text-anchor="middle" class="pd-tech pd-rule" font-size="9">severity is fixed HERE, before any model</text>
+
+      <line x1="530" y1="522" x2="530" y2="558" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- ══════════ BAND 4 · TRIAGE ══════════ -->
+      
+      <rect x="60" y="594" width="290" height="82" rx="9" class="pd-box pd-det" stroke-width="1.5"/>
+      <text x="205" y="615" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">1 &middot; allowlist</text>
+      <text x="205" y="631" text-anchor="middle" class="pd-s" font-size="9.5">your own remote-access range</text>
+      <text x="205" y="644" text-anchor="middle" class="pd-s" font-size="9.5">private ranges &middot; loopback</text>
+      <text x="205" y="658" text-anchor="middle" class="pd-s" font-size="9.5">never applied to honeypot traffic</text>
+      <text x="205" y="670" text-anchor="middle" class="pd-tech" font-size="9">first, so no third party can drop your access</text>
+
+      <rect x="385" y="594" width="290" height="82" rx="9" class="pd-box pd-det" stroke-width="1.5"/>
+      <text x="530" y="615" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">2 &middot; fingerprint dedup</text>
+      <text x="530" y="631" text-anchor="middle" class="pd-s" font-size="9.5">a hash of rule, source address and port</text>
+      <text x="530" y="644" text-anchor="middle" class="pd-s" font-size="9.5">already in an open case &rarr; attach to that one</text>
+      <text x="530" y="658" text-anchor="middle" class="pd-s" font-size="9.5">the same fingerprint many times makes one case</text>
+      <text x="530" y="670" text-anchor="middle" class="pd-tech" font-size="9">no model involved anywhere in this band</text>
+
+      <rect x="710" y="594" width="290" height="82" rx="9" class="pd-box pd-det" stroke-width="1.5"/>
+      <text x="855" y="615" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">3 &middot; known benign scanner</text>
+      <text x="855" y="631" text-anchor="middle" class="pd-s" font-size="9.5">opportunistic internet background noise,</text>
+      <text x="855" y="644" text-anchor="middle" class="pd-s" font-size="9.5">classified by a reputation service</text>
+      <text x="855" y="658" text-anchor="middle" class="pd-s" font-size="9.5">needs reputation data to have been passed in</text>
+      <text x="855" y="670" text-anchor="middle" class="pd-tech" font-size="9">the drop rule that keeps the pipeline cheap</text>
+
+      <rect x="60" y="706" width="290" height="56" rx="9" class="pd-box pd-drop" stroke-width="1.5"/>
+      <text x="205" y="728" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">closed as noise</text>
+      <text x="205" y="745" text-anchor="middle" class="pd-s" font-size="9.5">no model ever sees it &middot; costs nothing</text>
+
+      <line x1="205" y1="676" x2="205" y2="700" stroke="var(--accent-red)" stroke-width="1.4" marker-end="url(#arRed)"/>
+      <line x1="855" y1="676" x2="855" y2="690" stroke="var(--accent-red)" stroke-width="1.4"/>
+      <line x1="855" y1="690" x2="360" y2="690" stroke="var(--accent-red)" stroke-width="1.4"/>
+      <line x1="360" y1="690" x2="360" y2="722" stroke="var(--accent-red)" stroke-width="1.4"/>
+      <line x1="360" y1="722" x2="352" y2="722" stroke="var(--accent-red)" stroke-width="1.4" marker-end="url(#arRed)"/>
+      <text x="222" y="694" class="pd-al pd-no" font-size="9.5">any rule matches &rarr; drop</text>
+
+      <line x1="530" y1="676" x2="530" y2="716" stroke="var(--accent-green)" stroke-width="1.6" marker-end="url(#arGreen)"/>
+      <text x="544" y="700" class="pd-al pd-ok" font-size="9.5">nothing matched, open a case</text>
+
+      <rect x="400" y="722" width="360" height="62" rx="9" class="pd-box pd-gate" stroke-width="1.6"/>
+      <text x="580" y="744" text-anchor="middle" class="pd-t" font-size="13" font-weight="600">a case opens</text>
+      <text x="580" y="761" text-anchor="middle" class="pd-s" font-size="9.5">holds its alerts &middot; retry budget starts at zero</text>
+      <text x="580" y="775" text-anchor="middle" class="pd-tech" font-size="9">a state machine &middot; only whitelisted transitions</text>
+
+      <line x1="580" y1="784" x2="580" y2="820" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- ══════════ BAND 5 · ENRICHMENT ══════════ -->
+      
+      <rect x="60" y="856" width="290" height="82" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="205" y="878" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">indicators taken from the events</text>
+      <text x="205" y="894" text-anchor="middle" class="pd-s" font-size="9.5">public source addresses</text>
+      <text x="205" y="907" text-anchor="middle" class="pd-s" font-size="9.5">file hashes of the binary that ran</text>
+      <text x="205" y="920" text-anchor="middle" class="pd-s" font-size="9.5">read from the structured field AND the message</text>
+      <text x="205" y="932" text-anchor="middle" class="pd-tech" font-size="9">the agent writes hashes in two different shapes</text>
+
+      <rect x="385" y="856" width="290" height="82" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="530" y="878" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">five reputation providers</text>
+      <text x="530" y="894" text-anchor="middle" class="pd-s" font-size="9.5">GreyNoise &middot; Shodan &middot; AbuseIPDB</text>
+      <text x="530" y="907" text-anchor="middle" class="pd-s" font-size="9.5">VirusTotal &middot; MalwareBazaar</text>
+      <text x="530" y="920" text-anchor="middle" class="pd-s" font-size="9.5">the rate limit raises BEFORE the call is made</text>
+      <text x="530" y="932" text-anchor="middle" class="pd-tech" font-size="9">an outage degrades enrichment, never halts it</text>
+
+      <rect x="710" y="856" width="290" height="82" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="855" y="878" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">the reputation cache</text>
+      <text x="855" y="894" text-anchor="middle" class="pd-s" font-size="9.5">keyed by indicator, provider and date</text>
+      <text x="855" y="907" text-anchor="middle" class="pd-s" font-size="9.5">daily expiry &middot; a second pass re-reads it, free</text>
+      <text x="855" y="920" text-anchor="middle" class="pd-s" font-size="9.5">these payloads are sanitised too, reverse DNS</text>
+      <text x="855" y="932" text-anchor="middle" class="pd-s" font-size="9" font-weight="600">and service banners are attacker-controlled</text>
+
+      <line x1="350" y1="897" x2="381" y2="897" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="675" y1="897" x2="706" y2="897" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="530" y1="938" x2="530" y2="968" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+      <text x="544" y="958" class="pd-al" font-size="9.5">the case is now enriched and ready to investigate</text>
+
+      <!-- ══════════ BAND 6 · INVESTIGATION ══════════ -->
+      
+      <rect x="60" y="1010" width="290" height="126" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="205" y="1032" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">what goes into the prompt</text>
+      <text x="205" y="1049" text-anchor="middle" class="pd-s" font-size="9.5">precedent: a few past verified cases</text>
+      <text x="205" y="1062" text-anchor="middle" class="pd-s" font-size="9.5">signal quality: how broad the rule is,</text>
+      <text x="205" y="1075" text-anchor="middle" class="pd-s" font-size="9.5">how mature, how many false positives labelled</text>
+      <text x="205" y="1091" text-anchor="middle" class="pd-s" font-size="9.5">both are marked as context, not evidence,</text>
+      <text x="205" y="1104" text-anchor="middle" class="pd-s" font-size="9.5">and explicitly not citable</text>
+      <text x="205" y="1122" text-anchor="middle" class="pd-tech" font-size="9">anything added here becomes something it may assert</text>
+
+      <rect x="385" y="1010" width="290" height="126" rx="9" class="pd-box pd-llm"/>
+      <text x="530" y="1034" text-anchor="middle" class="pd-t" font-size="13.5" font-weight="700">the investigator</text>
+      <text x="530" y="1052" text-anchor="middle" class="pd-s" font-size="9.5">explains what the evidence shows</text>
+      <text x="530" y="1065" text-anchor="middle" class="pd-s" font-size="9.5">cannot open a case, cannot set severity,</text>
+      <text x="530" y="1078" text-anchor="middle" class="pd-s" font-size="9.5">cannot write to the evidence store</text>
+      <text x="530" y="1095" text-anchor="middle" class="pd-s" font-size="9.5">a bounded retry if its output is malformed</text>
+      <text x="530" y="1113" text-anchor="middle" class="pd-tech pd-llm" font-size="9.5" font-weight="600">Pydantic AI &middot; Ollama</text>
+      <text x="530" y="1127" text-anchor="middle" class="pd-tech pd-llm" font-size="9.5" font-weight="600">a pinned local model: MODEL A</text>
+
+      <rect x="710" y="1010" width="290" height="126" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="855" y="1032" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">exactly three tools, all read-only</text>
+      <text x="855" y="1050" text-anchor="middle" class="pd-s" font-size="9.5">the case's events, plus anything else the</text>
+      <text x="855" y="1063" text-anchor="middle" class="pd-s" font-size="9.5">same process did: capped by count and by size</text>
+      <text x="855" y="1078" text-anchor="middle" class="pd-s" font-size="9.5">cached reputation data, reads only</text>
+      <text x="855" y="1093" text-anchor="middle" class="pd-s" font-size="9.5">the rule's own text and stated intent</text>
+      <text x="855" y="1110" text-anchor="middle" class="pd-tech" font-size="9">no shell, no filesystem, no network, no writes</text>
+      <text x="855" y="1125" text-anchor="middle" class="pd-tech" font-size="9">a test asserts the list holds three and no more</text>
+
+      <line x1="350" y1="1073" x2="381" y2="1073" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="706" y1="1060" x2="679" y2="1060" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="679" y1="1090" x2="706" y2="1090" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="690" y="1052" class="pd-al" font-size="8.5" text-anchor="middle">calls</text>
+
+      <text x="-118" y="1060" class="pd-al" font-size="9.5">every tool</text>
+      <text x="-118" y="1073" class="pd-al" font-size="9.5">output passes</text>
+      <text x="-118" y="1086" class="pd-al" font-size="9.5">one sanitiser</text>
+      <text x="-118" y="1099" class="pd-al" font-size="9.5">markers are</text>
+      <text x="-118" y="1112" class="pd-al" font-size="9.5">replaced, not</text>
+      <text x="-118" y="1125" class="pd-al" font-size="9.5">dropped</text>
+
+      <line x1="530" y1="1136" x2="530" y2="1168" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <rect x="300" y="1174" width="460" height="76" rx="9" class="pd-box pd-out" stroke-width="1.5"/>
+      <text x="530" y="1196" text-anchor="middle" class="pd-t" font-size="13" font-weight="600">a finding</text>
+      <text x="530" y="1213" text-anchor="middle" class="pd-s" font-size="9.5">a short summary, a severity, and an explicit list</text>
+      <text x="530" y="1227" text-anchor="middle" class="pd-s" font-size="9.5">of what could not be determined &middot; plus one or more</text>
+      <text x="530" y="1241" text-anchor="middle" class="pd-s" font-size="9.5">claims, each with cited events and a confidence</text>
+
+      <line x1="530" y1="1250" x2="530" y2="1288" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- ══════════ BAND 7 · WRITE-TIME GUARDS ══════════ -->
+      
+      <rect x="200" y="1324" width="290" height="72" rx="9" class="pd-box pd-det" stroke-width="1.5"/>
+      <text x="345" y="1346" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">guard 1 &middot; the shape is valid</text>
+      <text x="345" y="1362" text-anchor="middle" class="pd-s" font-size="9.5">at least one claim, at least one cited event</text>
+      <text x="345" y="1375" text-anchor="middle" class="pd-s" font-size="9.5">per claim, confidence in range, fields in limits</text>
+      <text x="345" y="1389" text-anchor="middle" class="pd-tech" font-size="9">Pydantic: enforced by schema, not asked for</text>
+
+      <rect x="570" y="1324" width="290" height="72" rx="9" class="pd-box pd-det" stroke-width="1.5"/>
+      <text x="715" y="1346" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">guard 2 &middot; the cited events exist</text>
+      <text x="715" y="1362" text-anchor="middle" class="pd-s" font-size="9.5">every cited id must be a real stored row</text>
+      <text x="715" y="1375" text-anchor="middle" class="pd-s" font-size="9.5">this is the one that catches fabrication</text>
+      <text x="715" y="1389" text-anchor="middle" class="pd-tech" font-size="9">a cited id naming no stored row fails the write</text>
+
+      <line x1="530" y1="1288" x2="345" y2="1288" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="345" y1="1288" x2="345" y2="1320" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="530" y1="1288" x2="715" y2="1288" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="715" y1="1288" x2="715" y2="1320" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+
+      <line x1="345" y1="1396" x2="345" y2="1420" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="715" y1="1396" x2="715" y2="1420" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="345" y1="1420" x2="715" y2="1420" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="530" y1="1420" x2="530" y2="1452" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+      
+      <!-- ══════════ BAND 8 · PASS A ══════════ -->
+      
+      <rect x="60" y="1488" width="290" height="90" rx="9" class="pd-box pd-det" stroke-width="1.5"/>
+      <text x="205" y="1510" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">check 1 &middot; the evidence still exists</text>
+      <text x="205" y="1527" text-anchor="middle" class="pd-s" font-size="9.5">re-checked at verify time, not only at</text>
+      <text x="205" y="1540" text-anchor="middle" class="pd-s" font-size="9.5">write time: the retention purge can</text>
+      <text x="205" y="1553" text-anchor="middle" class="pd-s" font-size="9.5">remove a row between the two moments</text>
+      <text x="205" y="1570" text-anchor="middle" class="pd-tech" font-size="9">&ldquo;was this ever true&rdquo; vs &ldquo;is it still true&rdquo;</text>
+
+      <rect x="385" y="1488" width="290" height="90" rx="9" class="pd-box pd-det" stroke-width="1.5"/>
+      <text x="530" y="1510" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">check 2 &middot; every figure appears verbatim</text>
+      <text x="530" y="1527" text-anchor="middle" class="pd-s" font-size="9.5">counts: evidence split on non-alphanumerics,</text>
+      <text x="530" y="1540" text-anchor="middle" class="pd-s" font-size="9.5">only whole numbers count; a hash is not one</text>
+      <text x="530" y="1553" text-anchor="middle" class="pd-s" font-size="9.5">addresses parsed and compared; hostnames delimited</text>
+      <text x="530" y="1570" text-anchor="middle" class="pd-tech" font-size="9">scored for what it catches and what it keeps</text>
+
+      <rect x="710" y="1488" width="290" height="90" rx="9" class="pd-box pd-det" stroke-width="1.5"/>
+      <text x="855" y="1510" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">check 3 &middot; confidence is in bounds</text>
+      <text x="855" y="1527" text-anchor="middle" class="pd-s" font-size="9.5">and: a finding whose claims are ALL marked</text>
+      <text x="855" y="1540" text-anchor="middle" class="pd-s" font-size="9.5">general knowledge fails outright, it would</text>
+      <text x="855" y="1553" text-anchor="middle" class="pd-s" font-size="9.5">say nothing at all about this case</text>
+      <text x="855" y="1570" text-anchor="middle" class="pd-tech" font-size="9">the mechanical limit on the model tagging itself</text>
+
+      <text x="-118" y="1522" class="pd-al" font-size="9.5">searched: the</text>
+      <text x="-118" y="1535" class="pd-al" font-size="9.5">raw line, the</text>
+      <text x="-118" y="1548" class="pd-al" font-size="9.5">parsed address</text>
+      <text x="-118" y="1561" class="pd-al" font-size="9.5">and port, and</text>
+      <text x="-118" y="1574" class="pd-al" font-size="9.5">cached reputation</text>
+      <text x="-118" y="1587" class="pd-al" font-size="9.5">for cited indicators</text>
+
+      <line x1="205" y1="1578" x2="205" y2="1600" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="530" y1="1578" x2="530" y2="1600" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="855" y1="1578" x2="855" y2="1600" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="205" y1="1600" x2="855" y2="1600" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="530" y1="1600" x2="530" y2="1632" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar)"/>
+      <text x="544" y="1622" class="pd-al pd-no" font-size="9.5">any check fails &rarr; rejected, and the second pass is never consulted</text>
+
+      <line x1="530" y1="1452" x2="205" y2="1452" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="530" y1="1452" x2="855" y2="1452" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="205" y1="1452" x2="205" y2="1484" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="530" y1="1452" x2="530" y2="1484" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="855" y1="1452" x2="855" y2="1484" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+
+      <!-- ══════════ BAND 9 · PASS B ══════════ -->
+      
+      <rect x="60" y="1672" width="290" height="112" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="205" y="1694" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">public knowledge corpus</text>
+      <text x="205" y="1711" text-anchor="middle" class="pd-s" font-size="9.5">LOLBAS and MITRE ATT&amp;CK Enterprise</text>
+      <text x="205" y="1724" text-anchor="middle" class="pd-s" font-size="9.5">keyword search &middot; only the closest few entries</text>
+      <text x="205" y="1740" text-anchor="middle" class="pd-s" font-size="9.5">retrieved ONLY for claims the model</text>
+      <text x="205" y="1753" text-anchor="middle" class="pd-s" font-size="9.5">marked as general knowledge</text>
+      <text x="205" y="1770" text-anchor="middle" class="pd-tech" font-size="9">&ldquo;a Metasploit default port&rdquo;: true, and unlogged</text>
+
+      <rect x="385" y="1672" width="290" height="112" rx="9" class="pd-box pd-llm"/>
+      <text x="530" y="1696" text-anchor="middle" class="pd-t" font-size="13.5" font-weight="700">the verifier</text>
+      <text x="530" y="1714" text-anchor="middle" class="pd-s" font-size="9.5">given the sanitised cited events and the</text>
+      <text x="530" y="1727" text-anchor="middle" class="pd-s" font-size="9.5">claim sentence, and nothing else</text>
+      <text x="530" y="1743" text-anchor="middle" class="pd-s" font-size="9.5">does this claim follow from this evidence?</text>
+      <text x="530" y="1760" text-anchor="middle" class="pd-tech pd-llm" font-size="9.5" font-weight="600">a different pinned model: MODEL B</text>
+      <text x="530" y="1774" text-anchor="middle" class="pd-tech pd-llm" font-size="9">asserted different from model A at startup</text>
+
+      <rect x="710" y="1672" width="290" height="112" rx="9" class="pd-box pd-drop" stroke-width="1.4"/>
+      <text x="855" y="1694" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">deliberately withheld from it</text>
+      <text x="855" y="1711" text-anchor="middle" class="pd-s" font-size="9.5">the investigator's summary and reasoning</text>
+      <text x="855" y="1724" text-anchor="middle" class="pd-s" font-size="9.5">its confidence in each claim</text>
+      <text x="855" y="1737" text-anchor="middle" class="pd-s" font-size="9.5">the retrieved precedent</text>
+      <text x="855" y="1750" text-anchor="middle" class="pd-s" font-size="9.5">signal quality &middot; labels the pipeline attaches</text>
+      <text x="855" y="1768" text-anchor="middle" class="pd-tech" font-size="9">all of it invites deference, a reason to</text>
+      <text x="855" y="1779" text-anchor="middle" class="pd-tech" font-size="9">look harder, never a reason to believe</text>
+
+      <line x1="350" y1="1728" x2="381" y2="1728" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <line x1="706" y1="1728" x2="679" y2="1728" stroke="var(--accent-red)" stroke-width="1.3" stroke-dasharray="4 3"/>
+      <text x="692" y="1720" class="pd-al pd-no" font-size="9" text-anchor="middle">&times;</text>
+
+      <text x="-118" y="1706" class="pd-al" font-size="9.5">claims this</text>
+      <text x="-118" y="1719" class="pd-al" font-size="9.5">pass rejects often</text>
+      <text x="-118" y="1732" class="pd-al" font-size="9.5">carried the</text>
+      <text x="-118" y="1745" class="pd-al" font-size="9.5">model's own</text>
+      <text x="-118" y="1758" class="pd-al" font-size="9.5">high confidence</text>
+
+      <line x1="530" y1="1632" x2="530" y2="1668" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+      <line x1="530" y1="1784" x2="530" y2="1826" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+
+      <!-- fourth outcome: Pass B could not run at all -->
+      <line x1="530" y1="1800" x2="768" y2="1800" stroke="var(--accent-amber)" stroke-width="1.3" stroke-dasharray="4 3"/>
+      <line x1="768" y1="1800" x2="768" y2="1846" stroke="var(--accent-amber)" stroke-width="1.3" stroke-dasharray="4 3"/>
+      <text x="778" y="1799" class="pd-al" font-size="9.5" fill="var(--accent-amber)">or this pass never ran: unreachable, timeout</text>
+      <text x="778" y="1862" class="pd-al" font-size="9.5" fill="var(--accent-amber)">nothing is written &middot; the next sweep retries</text>
+      <text x="778" y="1876" class="pd-al" font-size="9" fill="var(--accent-amber)">an outage establishes nothing; calling it PASS</text>
+      <text x="778" y="1888" class="pd-al" font-size="9" fill="var(--accent-amber)">would flatter the score. The row is still kept.</text>
+
+      <!-- ══════════ BAND 10 · VERDICT ══════════ -->
+      <rect x="300" y="1832" width="460" height="62" rx="9" class="pd-box pd-gate" stroke-width="1.8"/>
+      <text x="530" y="1856" text-anchor="middle" class="pd-t" font-size="13" font-weight="700">the verdict</text>
+      <text x="530" y="1874" text-anchor="middle" class="pd-s" font-size="9.5">supported &middot; not supported &middot; needs more evidence</text>
+      <text x="530" y="1888" text-anchor="middle" class="pd-tech" font-size="9">a rejection is a result, not a failure; both are recorded</text>
+
+      <!-- three branches -->
+      <line x1="530" y1="1894" x2="530" y2="1912" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="205" y1="1912" x2="855" y2="1912" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="205" y1="1912" x2="205" y2="1948" stroke="var(--accent-green)" stroke-width="1.6" marker-end="url(#arGreen)"/>
+      <line x1="530" y1="1912" x2="530" y2="1948" stroke="var(--accent-amber)" stroke-width="1.6" marker-end="url(#ar)"/>
+      <line x1="855" y1="1912" x2="855" y2="1948" stroke="var(--accent-red)" stroke-width="1.6" marker-end="url(#arRed)"/>
+      <text x="212" y="1934" class="pd-al pd-ok" font-size="9.5">supported</text>
+      <text x="452" y="1934" class="pd-al" font-size="9.5" fill="var(--accent-amber)">needs more evidence</text>
+      <text x="762" y="1934" class="pd-al pd-no" font-size="9.5">not supported</text>
+
+      <rect x="60" y="1954" width="290" height="86" rx="9" class="pd-box pd-det" stroke-width="1.6"/>
+      <text x="205" y="1976" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">reported</text>
+      <text x="205" y="1993" text-anchor="middle" class="pd-s" font-size="9.5">report rendered: every claim links</text>
+      <text x="205" y="2006" text-anchor="middle" class="pd-s" font-size="9.5">to the events it cites</text>
+      <text x="205" y="2022" text-anchor="middle" class="pd-s" font-size="9.5">indexed as precedent at this moment,</text>
+      <text x="205" y="2034" text-anchor="middle" class="pd-tech" font-size="9">the only point where &ldquo;trustworthy&rdquo; is known</text>
+
+      <rect x="385" y="1954" width="290" height="86" rx="9" class="pd-box pd-rule" stroke-width="1.6"/>
+      <text x="530" y="1976" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">back to the investigator</text>
+      <text x="530" y="1993" text-anchor="middle" class="pd-s" font-size="9.5">the retry budget decrements &middot; capped at 2</text>
+      <text x="530" y="2006" text-anchor="middle" class="pd-s" font-size="9.5">the retry prompt carries the verifier's</text>
+      <text x="530" y="2019" text-anchor="middle" class="pd-s" font-size="9.5">actual objection, not just a second attempt</text>
+      <text x="530" y="2034" text-anchor="middle" class="pd-tech pd-rule" font-size="9">exhausted &rarr; a human. No unbounded loops anywhere.</text>
+
+      <rect x="710" y="1954" width="290" height="86" rx="9" class="pd-box pd-human" stroke-width="1.6"/>
+      <text x="855" y="1976" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">to a human</text>
+      <text x="855" y="1993" text-anchor="middle" class="pd-s" font-size="9.5">console shows each claim beside its events</text>
+      <text x="855" y="2006" text-anchor="middle" class="pd-s" font-size="9.5">the analyst answers two separate questions:</text>
+      <text x="855" y="2019" text-anchor="middle" class="pd-s" font-size="9.5">was the incident real? was the rejection right?</text>
+      <text x="855" y="2034" text-anchor="middle" class="pd-tech" font-size="9">chat is a doorbell &middot; the console is the workbench</text>
+
+      <!-- retry rail, routed left -->
+      <line x1="530" y1="2040" x2="530" y2="2062" stroke="var(--accent-amber)" stroke-width="1.5"/>
+      <line x1="530" y1="2062" x2="16" y2="2062" stroke="var(--accent-amber)" stroke-width="1.5"/>
+      <line x1="16" y1="2062" x2="16" y2="984" stroke="var(--accent-amber)" stroke-width="1.5"/>
+      <line x1="16" y1="984" x2="530" y2="984" stroke="var(--accent-amber)" stroke-width="1.5"/>
+      <line x1="530" y1="984" x2="530" y2="1006" stroke="var(--accent-amber)" stroke-width="1.5" marker-end="url(#ar)"/>
+      <text x="40" y="978" class="pd-al" font-size="9.5" fill="var(--accent-amber)">retry: the work queue has to pick up cases already under investigation, which is what makes this rail reachable at all</text>
+
+      <!-- ══════════ BAND 11 · ACCOUNTABILITY ══════════ -->
+      
+      <rect x="60" y="2098" width="290" height="94" rx="9" class="pd-box pd-data" stroke-width="1.8"/>
+      <text x="205" y="2120" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="700">the ledger: every model call</text>
+      <text x="205" y="2137" text-anchor="middle" class="pd-s" font-size="9.5">model tag, full prompt, full response,</text>
+      <text x="205" y="2150" text-anchor="middle" class="pd-s" font-size="9.5">which tools it called, tokens, latency</text>
+      <text x="205" y="2166" text-anchor="middle" class="pd-s" font-size="9.5">one row per investigation, verification and</text>
+      <text x="205" y="2179" text-anchor="middle" class="pd-tech" font-size="9">second opinion &middot; a call with no row is a bug</text>
+
+      <rect x="385" y="2098" width="290" height="94" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="530" y="2120" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">the precedent corpus</text>
+      <text x="530" y="2137" text-anchor="middle" class="pd-s" font-size="9.5">only cases that passed verification</text>
+      <text x="530" y="2150" text-anchor="middle" class="pd-s" font-size="9.5">keyword search plus local embeddings,</text>
+      <text x="530" y="2163" text-anchor="middle" class="pd-s" font-size="9.5">the two rankings fused rather than scored</text>
+      <text x="530" y="2179" text-anchor="middle" class="pd-tech" font-size="9">a case's event ids never leave that case</text>
+
+      <rect x="710" y="2098" width="290" height="94" rx="9" class="pd-box pd-data" stroke-width="1.5"/>
+      <text x="855" y="2120" text-anchor="middle" class="pd-t" font-size="12.5" font-weight="600">metrics</text>
+      <text x="855" y="2137" text-anchor="middle" class="pd-s" font-size="9.5">derived from the database, never from</text>
+      <text x="855" y="2150" text-anchor="middle" class="pd-s" font-size="9.5">live counters kept while running</text>
+      <text x="855" y="2166" text-anchor="middle" class="pd-s" font-size="9.5">drop rate &middot; time to detect &middot; claims per finding &middot;</text>
+      <text x="855" y="2179" text-anchor="middle" class="pd-tech" font-size="9">tokens per case &middot; verifier rejection rate</text>
+
+      <!-- ledger rail from the two LLM bands -->
+      <line x1="680" y1="1152" x2="1038" y2="1152" stroke="var(--accent-violet)" stroke-width="1.3" stroke-dasharray="3 3"/>
+      <line x1="1038" y1="1152" x2="1038" y2="2208" stroke="var(--accent-violet)" stroke-width="1.3" stroke-dasharray="3 3"/>
+      <line x1="675" y1="1812" x2="1038" y2="1812" stroke="var(--accent-violet)" stroke-width="1.3" stroke-dasharray="3 3"/>
+      <line x1="1038" y1="2208" x2="205" y2="2208" stroke="var(--accent-violet)" stroke-width="1.3" stroke-dasharray="3 3"/>
+      <line x1="205" y1="2208" x2="205" y2="2196" stroke="var(--accent-violet)" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#arViolet)"/>
+      <text x="1046" y="1420" class="pd-al" font-size="9.5" fill="var(--accent-violet)" transform="rotate(90 1046 1420)">model, prompt, response, tools called, tokens, latency</text>
+
+      <!-- feedback loop from human back to metrics -->
+      <line x1="855" y1="2040" x2="855" y2="2094" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="866" y="2072" class="pd-al" font-size="9.5">labels score the verifier</text>
+      <line x1="205" y1="2040" x2="205" y2="2094" stroke="var(--accent-green)" stroke-width="1.4" marker-end="url(#arGreen)"/>
+      <line x1="530" y1="2040" x2="530" y2="2094" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+
+      <text x="-118" y="2230" class="pd-al" font-size="10" font-style="italic">The ledger is the flight recorder, not the lock on the door. It means the model cannot act unobserved;</text>
+      <text x="-118" y="2246" class="pd-al" font-size="10" font-style="italic">the guards and the first pass mean it cannot act unchecked. Those are different mechanisms and it matters that they are separate.</text>
+
+      <text x="-118" y="2290" class="pd-al" font-size="10">This describes the mechanism, not a run. Counts, models and thresholds live in the repository, where they stay current.</text>
+      <text x="-118" y="2308" class="pd-al" font-size="10">Model tags are pinned because tags move; results without one are not reproducible.</text>
+
+      <text x="544" y="124" class="pd-al pd-haloed" font-size="9.5">one event shape &middot; adding a source touches only this layer</text>
+      <text x="380" y="404" class="pd-al pd-haloed" font-size="9.5">a rule matches a projected row</text>
+      <text x="544" y="1414" class="pd-al pd-haloed" font-size="9.5">either fails &rarr; straight to a human, and no model opinion overrides that</text>
+      <text x="-118" y="20" class="pd-lbl" font-size="10.5" fill="var(--accent-teal)">1 &nbsp;COLLECTION: collectors parse and normalise, nothing else</text>
+      <text x="-118" y="290" class="pd-lbl" font-size="10.5" fill="var(--accent-amber)">2 &nbsp;DETECTION: deterministic, decides what deserves attention</text>
+      <text x="-118" y="582" class="pd-lbl" font-size="10.5" fill="var(--accent-green)">3 &nbsp;NOISE FILTER: applied in this order, and the order is load-bearing</text>
+      <text x="-118" y="844" class="pd-lbl" font-size="10.5" fill="var(--accent-teal)">4 &nbsp;ENRICHMENT: deterministic, cached, and the model never calls it</text>
+      <text x="-118" y="998" class="pd-lbl" font-size="10.5" fill="var(--accent-violet)">5 &nbsp;INVESTIGATION: model A, the only stage that writes an explanation</text>
+      <text x="-118" y="1312" class="pd-lbl" font-size="10.5" fill="var(--accent-green)">6 &nbsp;WRITE-TIME GUARDS: before the finding is persisted</text>
+      <text x="-118" y="1476" class="pd-lbl" font-size="10.5" fill="var(--accent-green)">7 &nbsp;FIRST VERIFICATION PASS: no LLM, runs first, and is authoritative</text>
+      <text x="-118" y="1660" class="pd-lbl" font-size="10.5" fill="var(--accent-violet)">8 &nbsp;SECOND VERIFICATION PASS: model B, and it must not be model A</text>
+      <text x="-118" y="2086" class="pd-lbl" font-size="10.5" fill="var(--accent-teal)">9 &nbsp;ACCOUNTABILITY: passive: records, never blocks</text>
+    </svg>
+    <figcaption>
+      Read top to bottom. The two violet boxes are the only two model calls in the system:
+      everything above them decides what is worth looking at, and everything below them is a check
+      the model cannot influence. The dashed rail on the right is the ledger, where every model
+      call lands whether it passes or not.
+    </figcaption>
+  </figure>
+
+  </div>
+
+  <p class="sec-kicker"><span class="kn">03</span> Defense</p>
+  <h2>Prompt injection, answered by subtraction</h2>
+  <p>
+    Fabrication is the failure this pipeline is built around. Prompt injection is the other one,
+    and this pipeline invites it: it reads honeypot sessions, so some of the text reaching the
+    model was typed by an attacker, and a Sysmon command line is no safer. The rule is blunt:
+    <strong>all telemetry is hostile input</strong>, wherever it came from. Getting that rule
+    applied everywhere took two attempts, which is a story further down the page.
+  </p>
+  <p>
+    The defence is not a cleverer prompt but subtraction. Every piece of event text passes one
+    sanitiser before any model sees it: a denylist of known instruction markers, each replaced with
+    a visible token rather than deleted, because deleting a marker from text an attacker wrote can
+    splice a new one together out of what surrounds it. A denylist against natural language is
+    leaky by nature, and the design does not pretend otherwise. The attacker's prose still reaches
+    the model, because the prose is the evidence; what gets defused is the scaffolding that would
+    let it pose as an instruction. The same sanitiser covers enrichment payloads, the verifier's
+    inputs, and the claim sentence itself.
+  </p>
+  <p>
+    Measured directly, the denylist catches 7 of 7 literal phrases and 1 of 13 evasions. Leetspeak,
+    a Cyrillic character, a zero-width space, another language, base64, and a phrase split across two
+    commands all reach the model untouched. The denylist is not a defence, and the code has always
+    said so. What actually contains an injection is structural, and that is what the rest of this
+    section is: read-only tools, severity decided before any model runs, and every cited token
+    checked against stored evidence. Six evasion families were run through the full pipeline against
+    matched controls, and severity moved zero times.
+  </p>
+  <p>
+    The other subtraction is capability. The investigator's three tools were chosen for what they
+    cannot do: an injected instruction can ask for a shell, a file write, an outbound request, or
+    a change to the case, and none of those verbs exist in the toolset, so the most a successful
+    injection can command is another read of evidence the model already has.
+  </p>
+  <p>
+    What subtraction buys is that injection degrades into hallucination. A prompt that steers the
+    model cannot raise a severity, open a case, or write to the store, because the model never had
+    those powers. The most it can do is make the model write a wrong finding, and a wrong finding
+    faces the same citation checks and the same second model as an honest mistake. The one thing
+    sanitisation cannot prevent is a model talked out of reporting: a case whose investigator
+    produces nothing usable is not closed quietly but handed to a human, which is the fail-safe
+    for every other failure on this page.
+  </p>
+
+  <figure class="mc-figure">
+  <div class="mc-diagram">
+    <div class="key">
+      <span><i class="i-hostile"></i>Attacker-influenceable input</span>
+      <span><i class="i-clean"></i>Sanitiser (trusted code)</span>
+      <span><i class="i-llm"></i>Model</span>
+      <span><i class="i-det"></i>Structural defence</span>
+    </div>
+
+    <div class="phase">
+      <p class="plabel red"><span class="n">1</span> HOSTILE INPUTS <span class="sub">: everything attacker-influenceable that reaches a prompt</span></p>
+      <div class="df-grid">
+        <div class="sub hostile"><div class="sh"><span class="snm">events.raw</span><span class="sbadge sb-hostile">hostile</span></div>
+          <div class="sd">Honeypot sessions and Sysmon command lines: literally what the attacker typed.</div></div>
+        <div class="sub hostile"><div class="sh"><span class="snm">provider payloads</span><span class="sbadge sb-hostile">hostile</span></div>
+          <div class="sd">Shodan hostnames and tags come from the target's own PTR records, so they reach the prompt without ever passing through <code>events.raw</code>.</div></div>
+        <div class="sub hostile"><div class="sh"><span class="snm">claim sentences</span><span class="sbadge sb-hostile">hostile</span></div>
+          <div class="sd">Written by the investigator, which just read the two above, so its own output is treated as tainted too.</div></div>
+      </div>
+    </div>
+
+    <div class="between"><span class="seg"></span><div class="carry"><span class="lbl">carries &rarr; every string, before any model call</span><code>one sanitiser wraps all three paths; the prose stays, the scaffolding is defused</code></div><span class="seg"></span><span class="tip"></span></div>
+
+    <div class="phase">
+      <p class="plabel blue"><span class="n">2</span> SANITISE <span class="sub">: the defence is subtraction, not a cleverer prompt</span></p>
+      <div class="df-grid">
+        <div class="sub clean"><div class="sh"><span class="snm">sanitise_for_prompt(text)</span><span class="sbadge sb-clean">code</span></div>
+          <div class="sd">Replaces seven known injection phrases (<code>ignore previous instructions</code>, <code>system:</code>, ChatML markers, and the like) with a visible <code>[redacted-injection-attempt]</code>, neutralised not deleted so the attempt stays as evidence, then truncates at 4,000 chars. It catches all seven literal phrases and only 1 of 13 evasions.</div></div>
+        <div class="sub clean"><div class="sh"><span class="snm">sanitise_payload(obj)</span><span class="sbadge sb-clean">code</span></div>
+          <div class="sd">Walks dicts and lists and sanitises every string, leaving numbers and structure intact, so a hostile banner is defused without corrupting the payload shape.</div></div>
+        <div class="sub clean"><div class="sh"><span class="snm">context budget</span><span class="sbadge sb-clean">code</span></div>
+          <div class="sd">The assembled prompt is trimmed to 60,000 chars, cited evidence first, so it fits the model's window and nothing the case must cite is dropped to make room.</div></div>
+      </div>
+    </div>
+
+    <div class="between"><span class="seg"></span><div class="carry"><span class="lbl">carries &rarr; sanitised text and payloads</span><code>the attacker's prose still arrives, because the prose is the evidence</code></div><span class="seg"></span><span class="tip"></span></div>
+
+    <div class="phase">
+      <p class="plabel violet"><span class="n">3</span> MODELS <span class="sub">: neither ever sees a raw marker</span></p>
+      <div class="df-grid">
+        <div class="sub llm"><div class="sh"><span class="snm">investigator &middot; MODEL A</span><span class="sbadge sb-llm">AI</span></div>
+          <div class="sd">Reads the three sanitised tool outputs and nothing else.</div></div>
+        <div class="sub llm"><div class="sh"><span class="snm">Pass B &middot; MODEL B</span><span class="sbadge sb-llm">AI</span></div>
+          <div class="sd">Reads the sanitised events, enrichment and the claim sentence it is judging.</div></div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <p class="plabel green"><span class="n">4</span> STRUCTURAL BACKSTOP <span class="sub">: what holds even if a phrase slips the denylist</span></p>
+      <div class="df-grid">
+        <div class="sub det"><div class="sh"><span class="snm">Tools are read-only</span><span class="sbadge sb-det">by design</span></div>
+          <div class="sd">No shell, no writes, no network. The most a successful injection can command is another read of evidence the model already has.</div></div>
+        <div class="sub det"><div class="sh"><span class="snm">Severity is set before any model</span><span class="sbadge sb-det">by design</span></div>
+          <div class="sd">Fixed deterministically at detection, so no prompt can raise it.</div></div>
+        <div class="sub det"><div class="sh"><span class="snm">Pass A holds regardless</span><span class="sbadge sb-det">by design</span></div>
+          <div class="sd">The cited-figure check is code, immune to anything a model was talked into.</div></div>
+      </div>
+    </div>
+  </div>
+  <figcaption>
+    How prompt injection is contained. Three attacker-influenceable inputs pass through one
+    sanitiser before any model call, and even a phrase that slips the denylist degrades into a
+    wrong claim rather than an action, because the model was never given severity, writes, or a way
+    around the deterministic checks. The denylist itself catches 7 of 7 literal phrases and only 1
+    of 13 evasions; six evasion families were run through the real pipeline against matched controls,
+    and severity moved zero times.
+  </figcaption>
+  </figure>
+
+  <p class="sec-kicker"><span class="kn">04</span> Evidence</p>
+  <h2>What it caught</h2>
+  <p>
+    The checks are only worth anything if they refuse fabrication that looks real, so every finding
+    is run against them before it can stand. Here is what they caught, verbatim from the fixture,
+    from the blunt to the subtle. Each verdict was written before the check ever ran.
+  </p>
+  <pre class="code-sample"><span class="ex-id">01_fabricated_event_id</span>
+  <span class="ex-k">claim</span>  "An encoded PowerShell command was executed"
+  <span class="ex-k">cites</span>  01DOESNOTEXIST00000000000
+  <span class="ex-caught">caught by Guard 2: cited id resolves to no stored row</span>
+
+<span class="ex-id">12_ip_built_from_present_octets</span>
+  <span class="ex-k">claim</span>  "Traffic originated from 20.45.13.18"
+  <span class="ex-k">lie</span>    each octet is a number the evidence states; only the whole-token rule can catch it
+  <span class="ex-caught">caught by Pass A: the full address never occurs as one token</span></pre>
+  <p>
+    The second one is worth reading twice, because it shows what this check is. Pass A verifies
+    presence, not arithmetic: a figure with no matching token in the cited evidence cannot be real.
+    The naive way to check that looks for the digits anywhere in the text, and a fabricated 12 hides
+    comfortably inside a timestamp reading 2012. Splitting the evidence into whole tokens first
+    catches the invented address, and across a fixture of ninety invented counts it rejects 89, with
+    no new false rejections against the findings actually stored. The one survivor, 33, genuinely
+    appears in the evidence as its own token, which is the honest limit of the check: a figure that
+    happens to occur somewhere in the text gets through, and whether a real number is attached to
+    the right claim is the second model's problem, not this one's.
+  </p>
+  <p>
+    And one from the wild, not the fixture: a real certutil-download case investigated on
+    18&nbsp;August, where Pass A found every cited token present and Pass B still refused it.
+  </p>
+  <pre class="code-sample"><span class="ex-k">claim</span>   "The parent process was cmd.exe and the acting user was
+         DESKTOP&#92;bob on a desktop workstation"
+<span class="ex-k">pass A</span>  <span class="ex-ok">all claims supported by cited evidence</span>
+<span class="ex-k">pass B</span>  <span class="ex-fail">FAIL: the logs identify the user as DESKTOP&#92;bob and say
+        nothing about the machine type</span>
+<span class="ex-k">result</span>  <span class="ex-human">NEEDS_HUMAN</span></pre>
+  <p>
+    The username implies a desktop; nothing in the evidence states one. That
+    inference-dressed-as-observation is now its own fault class in the boundary set,
+    <code>username_implies_hardware</code>. It is one of the hand-authored fixtures the checkers are
+    scored against, a frozen benchmark that runs in CI with no model and no network. On it the
+    model-free pass catches 13 of 13 hand-crafted fabrications, 13 of 13 by the intended rule rather
+    than by luck, refuses 89 of 90 fabricated counts, and wrongly rejects 0 of 9 genuine findings.
+    Whether the second, model-based pass earns its cost is a separate question, still being measured.
+  </p>
+
+  <p class="sec-kicker"><span class="kn">05</span> The console</p>
+  <h2>The analyst console</h2>
+  <p>
+    All of that produces rows in a SQLite file: 990,247 events, 106 alerts raised from them, 64
+    cases opened and investigated, 316 claims checked. The console is how a human reads them.
+  </p>
+  <p>
+    A local console over the same SQLite file: a triage queue, a case view where every claim links
+    to the raw event it cites, a Sigma rule editor that back-tests a rule against history before it
+    can be saved, and the metrics table. Built on stdlib <code>http.server</code>: no web
+    framework, no new dependency, and the orchestrator is untouched.
+  </p>
+
+  <figure class="diagram-wide">
+    <img src="../assets/img/probative-console-queue.webp" alt="The console queue: four cases the pipeline could not close, each showing its rule, summary, claim and unknown counts, a severity badge, a NEEDS_HUMAN state and a failing verifier verdict" width="1300" height="560" loading="lazy" decoding="async">
+    <figcaption>
+      The queue holds only what the pipeline could not close by itself. Each row states why it is
+      here: the verifier refused the finding, or the investigator could not produce one. Labelling
+      a case removes it from the queue and scores the verifier against the analyst's own verdict.
+    </figcaption>
+  </figure>
+
+  <figure class="diagram-wide">
+    <img src="../assets/img/probative-console-case.webp" alt="The console case view for a passing case: the verification panel stating every claim is supported, four claims each citing stored events, the unknowns the finding had to declare, a recommended action, and retrieved precedent marked context only, beside the cached enrichment payloads" width="1300" height="1528" loading="lazy" decoding="async">
+    <figcaption>
+      A case that passed. The verification panel carries both passes' reasoning, and below the
+      claims sit the three panels that keep the model honest: what it could <em>not</em> determine,
+      a recommended action, and the retrieved precedent, labelled context only and explicitly not
+      citable. The enrichment column on the right was fetched and cached before any model ran.
+    </figcaption>
+  </figure>
+
+  <p>
+    The bind address is configurable, localhost by default, and the console refuses to start
+    without a password precisely because loopback stops being a boundary the moment a tunnel or a
+    reverse proxy forwards to it. It writes exactly three things: an analyst's verdict, a
+    detection rule that must compile before it saves, and <code>.env</code>. The password carries
+    the weight for all three; the last two are additionally refused on a non-loopback bind, a
+    defence in depth against misconfiguration rather than a boundary in itself. The
+    <code>.env</code> write is the sharpest privilege the console holds, because repointing a
+    model at a hosted endpoint would ship evidence off-host, which is exactly why it sits behind
+    both conditions.
+  </p>
+  <p class="provenance">
+    Passwords are PBKDF2-hashed; every state-changing request is Origin-checked, so the cookie path
+    cannot be ridden from another site.
+  </p>
+  <p>
+    Back-testing exists because a rule matching most of its logsource is a queue flood rather than a
+    detection, and breadth is only judged once there is enough history to judge it. Every number on
+    the metrics page is a query against the database rather than a counter kept while running, so a
+    crash mid-run cannot inflate it.
+  </p>
+
+
+  <p>
+    Storage, models, strictness and providers are editable from the console, written back to
+    <code>.env</code> with its comments preserved. Every field is declared in a validating registry,
+    so it refuses a verifier model equal to the investigator's, a retention window of zero, or any
+    key it does not declare.
+  </p>
+
+  <figure class="diagram-wide">
+    <img src="../assets/img/probative-console-settings.webp" alt="The console settings page: investigator and verifier models each badged LOCAL, hosted-provider key fields with a warning that a hosted model receives the evidence verbatim, the verification strictness controls, and five reputation providers each marked CONFIGURED beside a masked value" width="1214" height="1444" loading="lazy" decoding="async">
+    <figcaption>
+      Secrets are write-only: every provider key reads <strong>CONFIGURED</strong> beside a masked
+      field, and the page can replace a value but never receives the one already stored. The amber
+      note under the hosted-provider keys is the reason local inference is the default: a hosted
+      model would receive the evidence verbatim, internal hostnames and attacker-controlled honeypot
+      text included.
+    </figcaption>
+  </figure>
+
+  <p class="sec-kicker"><span class="kn">06</span> Failures</p>
+  <h2>Four things that broke</h2>
+
+  <div class="findings">
+  <div class="card">
+    <span class="tag">What broke</span>
+    <h3>A schema validates form; only evidence validates truth</h3>
+    <p>
+      Grammar-constrained decoding stopped the investigator from calling its tools, so it answered from
+      nothing: schema-perfect findings about attacks that never happened, on hosts that do not
+      exist, citing invented ids like <code>event-12345</code>. Guard 1, the schema, saw nothing
+      wrong with any of them; Guard 2, which checks every cited id against a real stored row,
+      caught <strong>every one</strong>.
+    </p>
+  </div>
+  </div>
+
+  <p>
+    The three structured-output modes were not interchangeable, and only one of them left the
+    tools reachable at all.
+  </p>
+
+  <div class="table-scroll">
+  <table>
+    <tr><th>Output mode</th><th>Tool calls</th><th>Result</th></tr>
+    <tr><td><code>ToolOutput</code> (default)</td><td>yes</td><td>80% valid, 20% malformed XML</td></tr>
+    <tr><td><code>NativeOutput</code></td><td><strong>zero</strong></td><td>0/2 valid, fabricated whole incidents</td></tr>
+    <tr><td><code>PromptedOutput</code></td><td><strong>zero</strong></td><td>0/3 valid, same</td></tr>
+  </table>
+  </div>
+
+  <div class="findings">
+
+  <div class="card">
+    <span class="tag">What broke</span>
+    <h3>Testing the guard is not testing the thing that arms it</h3>
+    <p>
+      The retry cap was tested, but the query that picks up work only looked for freshly enriched
+      cases, so a returned case was stranded and the budget was never spent. A later audit found
+      the same shape in 86 other places: the noise filter's ordering was not merely untested but
+      <strong>unobservable</strong>, because no fixture ever built a case where two rules disagreed.
+    </p>
+  </div>
+
+  <div class="card">
+    <span class="tag">What broke</span>
+    <h3>Context decides whether a rule is right, not the rule</h3>
+    <p>
+      The RFC1918 allowlist classified every honeypot alert as internal and benign, so 26 events
+      produced zero cases and nothing reported an error. A honeypot has no legitimate users, so
+      internal traffic arriving there means lateral movement, <em>more</em> alarming than an
+      external scan, not less.
+    </p>
+  </div>
+
+  <div class="card">
+    <span class="tag">What broke</span>
+    <h3>A rule phrased around one input gets implemented at that input</h3>
+    <p>
+      "Treat all telemetry as hostile" got built into the events tool and stopped there, while the
+      enrichment tool returned Shodan hostnames and banners (both attacker-controlled) straight
+      to the model. The threat is better stated as <em>anything attacker-influenceable that reaches
+      the prompt</em>, including data arriving through a trusted vendor's API.
+    </p>
+  </div>
+
+  </div>
+
+  <p class="sec-kicker"><span class="kn">07</span> Audit trail</p>
+  <h2>The ledger: every model call, on the record</h2>
+  <p>
+    One SQLite table, one row per call to a language model, written before the pipeline moves on.
+    Each holds the exact prompt sent and the exact response returned, verbatim, not a summary and
+    not a hash: a recent investigator row is a 3,896-character prompt and a 2,237-character response,
+    exactly as they went to the model and came back.
+  </p>
+
+  <p class="pullquote">"The model said so" is only checkable if the exact words survive. The ledger is what makes an AI's conclusion auditable months later instead of trusted in the moment.</p>
+
+  <div class="keypanel">
+    <p class="kp-label">Why it is a line, not a callback</p>
+    <ul>
+      <li><b>The rule.</b> Every LLM call writes a ledger row; a call with no row is a bug, with no exception for retries, cheap calls or test runs. It is one of the project's nine hard invariants, enforced in code rather than asked for in a prompt.</li>
+      <li><b>Where the write sits.</b> In the same error-handling block as the call, so the row lands even when the call fails, and on failure it captures what the model actually emitted, which is when it matters most.</li>
+      <li><b>Why not an agent framework.</b> LangChain and LangGraph own the call loop, so recording becomes a callback you register and hope fires on every path. Here the write is a line you can point at.</li>
+    </ul>
+  </div>
+
+  <div class="findings">
+  <div class="card">
+    <span class="tag">What it caught</span>
+    <h3>A column that silently stayed empty</h3>
+    <p>
+      The <code>tool_calls</code> column existed in the schema and nothing ever wrote to it: 256
+      rows of NULL. Nothing errored, no test failed, reports rendered, metrics computed. It hid that
+      <code>get_rule</code>, one of the investigator's three tools, had never worked, so every
+      finding in that window was written without the detection rule it rested on. The ledger is what
+      eventually made this visible. A missing row is the one thing that would have kept it hidden.
+    </p>
+  </div>
+  </div>
+
+  <p>
+    Prompts carry honeypot text, which is attacker-controlled, so past a retention window the prompt
+    and response are replaced with a marker and a SHA-256. The row itself survives on purpose:
+    <code>COUNT(*)</code> still proves no call went unrecorded once the content is gone. Deleting
+    rows would destroy the very count the ledger exists for.
+  </p>
+
+  <p class="sec-kicker"><span class="kn">08</span> Method</p>
+  <h2>Agreement with an incumbent is not accuracy</h2>
+  <p>
+    The verifier has to be a different model from the investigator, and two 17GB models will not
+    both stay loaded on a 24GB card, so every case pays for a model swap. A small verifier would
+    end that, so three challenger models were scored on how often they agreed with the current
+    one. The agreement was low, coin-toss low, and the conclusion wrote itself: closer to chance
+    than to competence, so small models cannot verify.
+  </p>
+  <p>
+    That conclusion was wrong, because agreement measures sameness rather than correctness. It
+    treats the incumbent as right by definition, so every disagreement counts against the
+    challenger. Two experienced radiologists reading the same ambiguous scan disagree often enough
+    that the disagreement is a studied quantity in its own right, and scoring one against the other
+    would tell you the cases were hard, not that either doctor was bad.
+  </p>
+
+  <p class="pullquote">Agreement tells you two models are the same. Whether either is right is a different question, and it needs an answer key written before either one runs.</p>
+
+  <p>
+    So the question was asked again <strong>with the answer key written first</strong>: fabrications
+    a verifier must reject and legitimate claims it must keep, each with its verdict decided before
+    any model saw it.
+  </p>
+
+  <div class="table-scroll">
+  <table>
+    <tr><th></th><th>Agreement with the incumbent</th><th>Answer key written first</th></tr>
+    <tr><td>What it measures</td><td>Substitutability</td><td><strong>Correctness</strong></td></tr>
+    <tr><td>Ground truth is</td><td>The incumbent's recorded verdict</td><td>A verdict written before any model ran</td></tr>
+    <tr><td>A challenger that disagrees is</td><td>Marked wrong</td><td>Checked</td></tr>
+    <tr><td>Can it separate two good models</td><td>No</td><td>Yes</td></tr>
+    <tr><td>Reports</td><td>One number</td><td>Two rates, caught and kept</td></tr>
+    <tr><td>Costs</td><td>Nothing, reuses stored verdicts</td><td>Every claim labelled by hand</td></tr>
+  </table>
+  </div>
+
+  <p>
+    The last two rows are the ones that decided it. Missing a fabrication is dangerous and
+    rejecting a good finding is merely expensive, so collapsing both into a single score hides
+    which mistake a model is actually making. And the answer key does not flatter anyone: re-run
+    today, nothing comes through it clean, the incumbent included. The small models did miss
+    fabrications, so the original verdict was right by accident and wrong in method, and the model
+    that agreed with the incumbent most often was not the one that caught the most fabrications.
+  </p>
+  <p>
+    The first method was itself the failure this project exists to catch: a confident, plausible,
+    unsupported conclusion, arrived at by a human rather than a model. It held two errors, not one:
+    it measured sameness instead of correctness, and I never checked the chance baseline that would
+    have shown the agreement I saw was barely above guessing. The
+    incumbent stays anyway, slower but safe: a verifier that lets even one fabrication through has
+    failed at the one thing it is for, and its latency is paid once per case, not per event, so here
+    correctness is the cheap thing to buy.
+  </p>
+  <p>
+    Whether that second pass earns its cost is itself still open, and the answer may be no. Of the
+    claims the model-free pass accepted, the second pass rejected 12 of 225. Whether those
+    rejections were correct is being decided by blind human labelling, the answer key held in a
+    separate file, and the result will be published either way.
+  </p>
+
+  <p class="sec-kicker"><span class="kn">09</span> Limits</p>
+  <h2>What these numbers do not cover</h2>
+  <ul>
+    <li><b>Detection recall is 41.7%.</b> Measured against a corpus of 20 attacks written from
+      ATT&amp;CK technique descriptions rather than from the rule files, because authoring one attack
+      per rule would score 100% by definition. No rule stayed silent on an attack it describes, so
+      nothing is broken: the misses are techniques nobody has written a rule for yet, named
+      individually in the project's documentation. And recall against a corpus you wrote yourself is
+      bounded by your own imagination, so a technique I did not think of is missing from the rules and
+      the test corpus alike. The blind spot is narrower, not closed.</li>
+    <li><b>Sample sizes are small.</b> 64 cases, 316 claims, 49 findings that reached the second
+      verification pass. Every rate derived from these carries a wide confidence interval, and the
+      project reports the interval rather than the percentage alone.</li>
+    <li><b>It runs on one machine and has never seen public internet traffic.</b> The honeypot ran on
+      an isolated local network with a simulated attacker, and the seven-day traffic baseline that
+      several measurements depend on has not been collected.</li>
+    <li><b>Two of the three noise-filter rules have never fired.</b> They have never been handed input
+      they could act on, so their real-world value is untested rather than disproven.</li>
+    <li><b>I wrote both the fabrications and the checks that catch them.</b> The benchmark scores show
+      the checks agree with my own idea of a fake, not an outside standard. Two catches were the
+      exception, real and unstaged: a batch of machine-generated fakes the code caught, and a subtle
+      claim the model rejected during a live investigation.</li>
+  </ul>
+
+  <blockquote>
+    Run against captured honeypot traffic and synthetic endpoint telemetry, not a production
+    estate.
+  </blockquote>
+
+  <p class="sec-kicker"><span class="kn">10</span> Conclusion</p>
+  <h2>What it comes down to</h2>
+  <div class="keypanel">
+    <p class="kp-label">What the project shows</p>
+    <ul>
+      <li><b>Structure beats prompting for trust.</b> Strip the model's authority, no severity, no case creation, no writes, and its worst output degrades from a dangerous action into a claim the checks can catch.</li>
+      <li><b>Verification has to be independent and adversarial.</b> Deterministic code checks the figures; a second, different model checks the reasoning, both kept blind to the investigator's own confidence.</li>
+      <li><b>Measurement is where judgment shows.</b> The project's own worst error was a confident, unsupported conclusion, caught only by writing the answer key before the models ran.</li>
+      <li><b>Honest scope.</b> A prototype on captured and synthetic data across 64 cases, not a production deployment. The architecture is not original either: deterministic validation of model output and mandatory evidence citation both appear in published vendor and academic work. The one property worth defending is narrower, that the first verification pass contains no model, so unlike every model-based checker it cannot itself hallucinate.</li>
+    </ul>
+  </div>
+
+  <p>
+    Most of the effort went into trying to prove the system did not work, and several times it did not.
+  </p>
+
+  <p>
+    The verifier was never meant to be a guarantee. All of this exists because a model will hand
+    you a fluent, confident answer that is wrong. The most confident wrong answer on this page was
+    not the model's, though. It was mine: <em>small models cannot verify</em>. I had measured
+    whether they agreed with the model I already trusted, and never whether they were right. Writing the answers
+    down first cost an afternoon of hand-labelling. Not doing it had already cost me a conclusion I
+    believed.
+  </p>
+
+  <p style="margin-top:2.5rem;">
+    <a class="link-arrow" href="../index.html#work">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg);"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      Back to all projects
+    </a>
+  </p>
+
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>© <span id="year">2026</span> Kim Pi Skaw · Hand-built, no trackers.</span>
+    <a href="https://github.com/kimskaw/kimskaw.github.io" target="_blank" rel="noopener">view source ↗</a>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js?v=101"></script>
+</body>
+</html>

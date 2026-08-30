@@ -1,36 +1,52 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-page="pi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Turning a $60 Raspberry Pi into Real Infrastructure — Kim Pi Skaw</title>
-<meta name="description" content="How I turned a Raspberry Pi 4 into a full self-hosted infrastructure stack — DNS ad-blocking, intrusion detection, monitoring, and automation.">
-<script>if (localStorage.getItem("theme") === "light") document.documentElement.setAttribute("data-theme", "light");</script>
+<title>Turning a Raspberry Pi into Real Infrastructure | Kim Pi Skaw</title>
+<meta name="description" content="How I turned a Raspberry Pi 4 into a full self-hosted infrastructure stack: DNS ad-blocking, intrusion detection, monitoring, and automation.">
+<link rel="canonical" href="https://kimskaw.github.io/projects/home-server.html">
+<meta name="theme-color" content="#0b0e11" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f7fa" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://kimskaw.github.io/projects/home-server.html">
+<meta property="og:title" content="Turning a Raspberry Pi into Real Infrastructure | Kim Pi Skaw">
+<meta property="og:description" content="How I turned a Raspberry Pi 4 into a full self-hosted infrastructure stack: DNS ad-blocking, intrusion detection, monitoring, and automation.">
+<meta property="og:image" content="https://kimskaw.github.io/assets/img/pi.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<script>
+  document.documentElement.className += " js";
+    (function () {
+    var t = localStorage.getItem("theme");
+    if (!t) t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    if (t === "light") document.documentElement.setAttribute("data-theme", "light");
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css?v=108">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🖥️</text></svg>">
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 <div class="bg-fx" aria-hidden="true"></div>
 
 <header class="nav">
   <div class="nav-inner">
-    <a class="logo" href="../index.html" aria-label="Kim Pi Skaw — home">
+    <a class="logo" href="../index.html" aria-label="Kim Pi Skaw, home">
       <span class="mark">ks</span>kimskaw
     </a>
     <nav aria-label="Main">
       <ul class="nav-links" id="nav-links">
-        <li><a href="../index.html#about">About</a></li>
-        <li><a href="../index.html#skills">Skills</a></li>
-        <li><a href="../index.html#projects" class="active">Projects</a></li>
+        <li><a href="../index.html#work" class="active">Work</a></li>
+        <li><a href="../index.html#stack">Stack</a></li>
         <li><a href="../index.html#contact">Contact</a></li>
         <li><a class="nav-cta" href="https://github.com/kimskaw" target="_blank" rel="noopener">GitHub ↗</a></li>
       </ul>
     </nav>
-    <div style="display:flex;gap:10px;align-items:center;">
-      <button class="icon-btn" id="theme-toggle" aria-label="Toggle color theme">
+    <div class="nav-tools">
+      <button class="icon-btn" id="theme-toggle" aria-label="Switch to light theme" aria-pressed="false">
         <svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
@@ -41,15 +57,17 @@
   </div>
 </header>
 
-<main class="article-wrap article">
+<main class="article-wrap article" id="main">
+
+  <a class="back-link" href="../index.html#work"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>All work</a>
 
   <header class="article-hero">
     <div>
       <span class="eyebrow">Home Lab · Write-up</span>
-      <h1>Turning a $60 Raspberry Pi into a Real Piece of Infrastructure</h1>
+      <h1>Turning a Raspberry Pi into a Real Piece of Infrastructure</h1>
       <p class="lede">
         Network-wide ad blocking, intrusion detection, full observability, and workflow
-        automation — running on a single low-power board, with no ports exposed to the internet.
+        automation, running on a single low-power board, with no ports exposed to the internet.
       </p>
       <div class="article-meta">
         <span>Personal infrastructure project</span>
@@ -68,77 +86,54 @@
       </div>
     </div>
     <div class="frame">
-      <img src="../assets/img/pi.jpg" alt="Raspberry Pi 4 board">
+      <img src="../assets/img/pi.jpg" alt="Raspberry Pi 4 board" width="595" height="335" fetchpriority="high">
     </div>
   </header>
 
   <div class="prose">
   <p>
-    A Raspberry Pi 4 sounds like a toy — four ARM cores, 4GB of RAM, the kind of thing you'd
-    use to blink an LED. Mine currently runs twelve production services around the clock:
-    it blocks ads for every device on my network, watches for intrusion attempts, collects
-    and visualizes metrics and logs from itself and every container it hosts, runs automated
-    workflows, and gives me secure remote access from anywhere — without a single port
-    forwarded on my router.
-  </p>
-  <p>
-    This post walks through what the setup does, how it's put together, and — more
-    usefully than a features list — what actually went wrong along the way and what I'd do
-    differently next time.
+    A Raspberry Pi 4 sounds like a toy. Mine runs twelve production services around the
+    clock: ad blocking for every device on the network, intrusion detection, metrics and
+    logs from every container it hosts, automated workflows, and secure remote access, without a single port forwarded on the router.
   </p>
   </div>
 
-  <h2>What it actually does</h2>
+  <h2>What it does</h2>
   <p>Five real jobs, running on one board:</p>
   <ul>
     <li>
-      <strong>Network-wide ad blocking</strong> — <a href="https://pi-hole.net/" target="_blank" rel="noopener">Pi-hole</a>
+      <strong>Network-wide ad blocking</strong>: <a href="https://pi-hole.net/" target="_blank" rel="noopener">Pi-hole</a>
       sits as the DNS resolver for every device on the network, so ads and trackers get
-      filtered out before they even load, on phones, laptops, and smart TVs alike — no
-      per-device extensions needed.
+      filtered out before they even load, on phones, laptops, and smart TVs alike, with no per-device extensions needed.
     </li>
     <li>
-      <strong>Intrusion detection</strong> — <a href="https://www.crowdsec.net/" target="_blank" rel="noopener">CrowdSec</a>
+      <strong>Intrusion detection</strong>: <a href="https://www.crowdsec.net/" target="_blank" rel="noopener">CrowdSec</a>
       watches logs for attack patterns and automatically blocks offending IPs at the firewall,
       backed by a crowdsourced threat-intelligence feed.
     </li>
     <li>
-      <strong>Full observability</strong> — every container and the host itself report metrics
+      <strong>Full observability</strong>: every container and the host itself report metrics
       into <strong>Prometheus</strong>, logs into <strong>Loki</strong>, and both get visualized
       in <strong>Grafana</strong> dashboards, with an uptime/latency prober (<code>blackbox-exporter</code>)
       checking that the important services are actually reachable.
     </li>
     <li>
-      <strong>Workflow automation</strong> — <a href="https://n8n.io/" target="_blank" rel="noopener">n8n</a>
+      <strong>Workflow automation</strong>: <a href="https://n8n.io/" target="_blank" rel="noopener">n8n</a>
       handles the "if this happens, do that" glue work that would otherwise be a pile of
       cron scripts, including a daily crucial-alerts digest email (details below).
     </li>
     <li>
-      <strong>Secure remote access</strong> — <a href="https://tailscale.com/" target="_blank" rel="noopener">Tailscale</a>
+      <strong>Secure remote access</strong>: <a href="https://tailscale.com/" target="_blank" rel="noopener">Tailscale</a>
       creates a private mesh network back to the Pi, so I can reach dashboards and services
-      from anywhere without opening a single port on the home router — the attack surface
+      from anywhere without opening a single port on the home router. The attack surface
       from the internet is effectively zero.
     </li>
   </ul>
 
-  <div class="photo-grid">
-    <div class="photo">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
-      <span class="photo-label">PHOTO: Pi-hole dashboard</span>
-    </div>
-    <div class="photo">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/></svg>
-      <span class="photo-label">PHOTO: CrowdSec console</span>
-    </div>
-    <div class="photo">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18M7 15l4-6 4 3 4-8"/></svg>
-      <span class="photo-label">PHOTO: Grafana dashboard</span>
-    </div>
-  </div>
 
   <h2>How it's put together</h2>
   <p>
-    The whole stack is defined in one Docker Compose file — twelve containers, each doing one
+    The whole stack is defined in one Docker Compose file: twelve containers, each doing one
     job, wired together with a shared metrics and logging pipeline:
   </p>
   <div class="table-scroll">
@@ -153,203 +148,236 @@
   </table>
   </div>
 
-  <div class="photo photo-wide">
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-    <span class="photo-label">PHOTO / DIAGRAM: physical wiring or architecture diagram</span>
-  </div>
 
   <p>
-    Anything with a web UI that doesn't have its own login screen — Grafana, Prometheus,
-    Loki, Portainer, blackbox-exporter — is deliberately bound to <code>127.0.0.1</code>
+    Anything with a web UI that doesn't have its own login screen (Grafana, Prometheus,
+    Loki, Portainer, blackbox-exporter) is deliberately bound to <code>127.0.0.1</code>
     only. Pi-hole's DNS and admin UI are the only things intentionally open to the local
     network, because that's the one service whose entire job requires it. Those loopback
     ports are then republished over HTTPS to just my Tailscale devices with
-    <code>tailscale serve</code> — same containers, same loopback bind, no LAN exposure,
+    <code>tailscale serve</code>: same containers, same loopback bind, no LAN exposure,
     reachable from anywhere on the tailnet at the box's own hostname.
   </p>
 
   <h3>The daily digest workflow</h3>
   <p>
-    There's no Alertmanager in this stack — Prometheus scrapes and blackbox-exporter probes,
-    but nothing pre-triages a failure into a fired alert. So instead of waiting on alerts
-    that don't exist, an n8n workflow runs once every 24 hours and reads raw state directly
-    from every source that has anything worth knowing:
+    There's no Alertmanager in this stack, so nothing pre-triages a failure into a fired alert.
+    Instead an n8n workflow runs every 24 hours and reads raw state directly from each source:
   </p>
-  <ul>
-    <li><strong>CrowdSec</strong> — currently active IP bans.</li>
-    <li><strong>Prometheus</strong> — any scrape target reporting <code>up == 0</code>, and any
-      blackbox probe reporting <code>probe_success == 0</code> (Pi-hole / Grafana unreachable).</li>
-    <li><strong>Loki</strong> — an accurate 24h count of <code>error|critical|fatal</code> log
-      lines via <code>count_over_time</code>, deliberately excluding Loki's own routine
-      query-cancellation noise (<code>"context canceled"</code>, <code>"EOF"</code>) so that
-      churn doesn't drown out real errors — plus a small sample of matching lines for the model
-      to quote from.</li>
-    <li><strong>cAdvisor</strong> — which containers (re)started in the last 24h, the one check
-      that catches a crash-and-recover that the instant <code>up == 0</code> query above would
-      otherwise miss.</li>
-    <li><strong>Node health</strong> — disk free, memory available, swap used, and CPU
-      temperature straight from node-exporter.</li>
-    <li><strong>OOM &amp; CrowdSec health</strong> — containers killed for memory overuse, and
-      CrowdSec's own internal alert-creation count. This is also where a known, permanent gap
-      gets surfaced honestly rather than hidden: CrowdSec has no Pi-hole/dnsmasq parser
-      installed, so 100% of the ~80k Pi-hole log lines it sees every day fail to parse. That
-      counter is reported as a lifetime total, not a 24h delta — an <code>increase()</code>
-      over a counter with no clean reset window produced a wildly inflated, misleading number
-      the first time this ran.</li>
-    <li><strong>Pi-hole stats</strong> — whether ad-blocking is actually enabled (the one
-      Pi-hole failure mode that's a real security concern, since DNS keeps resolving fine and
-      nothing else would flag it), plus today's block count and query volume as context.</li>
-  </ul>
+
+  <div class="table-scroll">
+  <table>
+    <tr><th>Source</th><th>What it reads</th></tr>
+    <tr><td>CrowdSec</td><td>Currently active IP bans</td></tr>
+    <tr><td>Prometheus</td><td>Any target reporting <code>up == 0</code>, and any blackbox probe reporting <code>probe_success == 0</code></td></tr>
+    <tr><td>Loki</td><td>A 24h count of <code>error|critical|fatal</code> lines, excluding Loki's own query-cancellation noise so churn doesn't drown out real errors</td></tr>
+    <tr><td>cAdvisor</td><td>Containers that (re)started in 24h, which catches a crash-and-recover that an instant <code>up == 0</code> query would miss</td></tr>
+    <tr><td>node-exporter</td><td>Disk free, memory available, swap used, CPU temperature</td></tr>
+    <tr><td>Pi-hole</td><td>Whether ad-blocking is actually enabled, the one failure mode nothing else would flag, since DNS keeps resolving fine</td></tr>
+  </table>
+  </div>
+
   <p>
-    Everything gets merged and handed to an LLM (via OpenRouter) with explicit grading rules —
-    active bans, down targets, probe failures, high disk/temp, or ad-blocking disabled all grade
-    <strong>CRUCIAL</strong>; one-off restarts or elevated error counts grade
-    <strong>MEDIUM</strong>; a clean day still grades <strong>INFO</strong> and gets a short
-    factual email rather than silence. The grade lands directly in the subject line, so a quiet
-    day is triageable from the inbox list without opening anything, and a bad day is
-    unmistakable.
+    Everything is merged and handed to an LLM with explicit grading rules: active bans, down
+    targets, probe failures, high disk or temperature, or ad-blocking disabled all grade
+    <strong>CRUCIAL</strong>; one-off restarts grade <strong>MEDIUM</strong>; a clean day still
+    grades <strong>INFO</strong>. The grade goes in the subject line, so the inbox list is the
+    triage view.
   </p>
+
+  <figure class="mc-figure">
+  <div class="mc-diagram">
+    <div class="key">
+      <span><i class="i-data"></i>Source read (metrics / logs / state)</span>
+      <span><i class="i-det"></i>Trusted code (deterministic)</span>
+      <span><i class="i-llm"></i>AI grade (one local LLM call)</span>
+      <span><i class="i-out"></i>Delivery</span>
+    </div>
+
+    <div class="phase">
+      <p class="plabel amber"><span class="n">0</span> TRIGGER <span class="sub">: n8n fires the workflow on a fixed schedule</span></p>
+      <div class="solo det"><div class="sh"><span class="snm">Every 24h</span><span class="sbadge sb-det">trusted</span></div>
+        <div class="sd">A n8n <code>schedule</code> node runs the pipeline once a day. No webhook, nothing inbound: the Pi reaches out to each service itself.</div>
+      </div>
+    </div>
+
+    <div class="between"><span class="seg"></span><div class="carry"><span class="lbl">carries &rarr; fan-out</span><code>run six collectors in parallel, each hits one service on the docker network, read-only</code></div><span class="seg"></span><span class="tip"></span></div>
+
+    <div class="phase">
+      <p class="plabel green"><span class="n">1</span> COLLECT <span class="sub">: read raw state from six sources &middot; no model involved yet</span></p>
+      <div class="df-grid">
+        <div class="sub data"><div class="sh"><span class="snum">1a</span><span class="snm">CrowdSec</span><span class="sbadge sb-data">read</span></div>
+          <div class="sd">LAPI on <code>crowdsec:8080</code>: currently active IP-ban decisions.</div>
+          <div class="sout">&rarr; <b>bans:</b> 0 active</div></div>
+        <div class="sub data"><div class="sh"><span class="snum">1b</span><span class="snm">Prometheus</span><span class="sbadge sb-data">read</span></div>
+          <div class="sd"><code>prometheus:9090</code>: any <code>up == 0</code> target and any <code>probe_success == 0</code> blackbox probe.</div>
+          <div class="sout">&rarr; <b>down:</b> 0 targets, 0 probes</div></div>
+        <div class="sub data"><div class="sh"><span class="snum">1c</span><span class="snm">Loki</span><span class="sbadge sb-data">read</span></div>
+          <div class="sd"><code>loki:3100</code>: 24h count of <code>error|critical|fatal</code> lines, its own query-cancel noise excluded.</div>
+          <div class="sout">&rarr; <b>errors:</b> 24h count</div></div>
+        <div class="sub data"><div class="sh"><span class="snum">1d</span><span class="snm">cAdvisor</span><span class="sbadge sb-data">read</span></div>
+          <div class="sd">Container start-time deltas: anything that (re)started in 24h, which catches a crash-and-recover.</div>
+          <div class="sout">&rarr; <b>restarts:</b> containers in 24h</div></div>
+        <div class="sub data"><div class="sh"><span class="snum">1e</span><span class="snm">node-exporter</span><span class="sbadge sb-data">read</span></div>
+          <div class="sd">Host vitals: disk free, memory available, swap used, CPU temperature.</div>
+          <div class="sout">&rarr; <b>host:</b> disk / mem / swap / temp</div></div>
+        <div class="sub data"><div class="sh"><span class="snum">1f</span><span class="snm">Pi-hole</span><span class="sbadge sb-data">read</span></div>
+          <div class="sd">Admin API: is ad-blocking actually enabled? The one failure DNS itself would hide.</div>
+          <div class="sout">&rarr; <b>blocking:</b> enabled?</div></div>
+      </div>
+    </div>
+
+    <div class="between"><span class="seg"></span><div class="carry"><span class="lbl">carries &rarr; merged state (trusted code, no model)</span><code>{ bans:0, targets_down:0, probes_failed:0, errors_24h:N,
+  restarts:[...], disk_free, mem_avail, swap, cpu_temp, blocking:true }</code></div><span class="seg"></span><span class="tip"></span></div>
+
+    <div class="phase">
+      <p class="plabel violet"><span class="n">2</span> MERGE &amp; GRADE <span class="sub">: one model call, and its only job is to grade</span></p>
+      <div class="solo det"><div class="sh"><span class="snm">Merge</span><span class="sbadge sb-det">trusted</span></div>
+        <div class="sd">An n8n code node joins all six results into one state object. Deterministic: the model never fetches anything itself, so it cannot invent a source or miss one.</div>
+      </div>
+      <div class="vsub">&#9660;</div>
+      <div class="solo llm"><div class="sh"><span class="snm">LLM grade</span><span class="sbadge sb-llm">AI</span></div>
+        <div class="sd">A local model grades every signal against explicit rules and writes the digest body. Grading and phrasing only, it gets no tools.</div>
+        <div class="grid2">
+          <div class="mini"><div class="t" style="color:var(--red)">CRUCIAL</div><div class="s">active bans, down targets, probe failures, high disk or temperature, ad-blocking disabled</div></div>
+          <div class="mini"><div class="t" style="color:var(--amber)">MEDIUM</div><div class="s">one-off container restarts</div></div>
+          <div class="mini"><div class="t" style="color:var(--green)">INFO</div><div class="s">a clean day, everything nominal</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="between"><span class="seg"></span><div class="carry"><span class="lbl">carries &rarr; graded digest</span><code>{ grade: "CRUCIAL" | "MEDIUM" | "INFO", subject, body }</code></div><span class="seg"></span><span class="tip"></span></div>
+
+    <div class="phase">
+      <p class="plabel amber"><span class="n">3</span> DELIVER <span class="sub">: the inbox becomes the triage view</span></p>
+      <div class="solo out"><div class="sh"><span class="snm">Email</span><span class="sbadge sb-out">delivery</span></div>
+        <div class="sd">One email, the highest grade in the subject line. A CRUCIAL morning is obvious before the message is opened; a clean day is a single INFO line to skim past.</div>
+      </div>
+    </div>
+  </div>
+  <figcaption>
+    The digest pipeline end to end. Six sources are read on a schedule and merged by trusted code; a
+    single local model call grades the result and writes the summary, but never fetches anything
+    itself. The grade rides in the subject line, so triage happens in the inbox list.
+  </figcaption>
+  </figure>
+
+  <p>
+    One known gap is stated rather than hidden: CrowdSec has no Pi-hole/dnsmasq parser installed,
+    so 100% of the ~80k Pi-hole log lines it sees daily fail to parse. That counter is reported as
+    a lifetime total, not a 24h delta. An <code>increase()</code> over a counter with no clean
+    reset window produced a wildly inflated number the first time this ran.
+  </p>
+
+    <figure class="hs-figure">
+    <div class="hs-diagram">
+      <div class="hs-key">
+        <span><i class="k-lan"></i> LAN reachable</span>
+        <span><i class="k-ts"></i> Tailscale only</span>
+        <span><i class="k-lb"></i> Loopback / SSH tunnel</span>
+        <span><i class="k-int"></i> Internal (docker only)</span>
+      </div>
+      <div class="hs-band hs-net">public internet &middot; no ports forwarded, nothing inbound</div>
+      <div class="hs-arrow">&darr;</div>
+      <div class="hs-host">
+        <div class="hs-host-label">km-pi &middot; Raspberry Pi 4 &middot; Debian 13</div>
+        <div class="hs-group">
+          <div class="hs-gl">DNS &amp; security</div>
+          <span class="hs-svc lan">pi-hole</span><span class="hs-svc lb">crowdsec</span><span class="hs-svc int">firewall-bouncer &rarr; nftables</span><span class="hs-svc lb">pihole-exporter</span>
+        </div>
+        <div class="hs-group">
+          <div class="hs-gl">observability</div>
+          <span class="hs-svc ts">grafana</span><span class="hs-svc ts">prometheus &middot; 30d</span><span class="hs-svc ts">loki</span><span class="hs-svc ts">blackbox</span><span class="hs-svc int">promtail</span><span class="hs-svc int">node-exporter &middot; cadvisor</span>
+        </div>
+        <div class="hs-group">
+          <div class="hs-gl">automation &amp; ops</div>
+          <span class="hs-svc ts">portainer</span><span class="hs-svc lb">n8n</span>
+        </div>
+      </div>
+      <div class="hs-arrow">&darr;</div>
+      <div class="hs-band hs-remote">remote access &middot; Tailscale only, HTTPS via Serve, to tailnet devices</div>
+    </div>
+    <figcaption>
+      Every service by how it is reached, not just what it does. Nothing is forwarded from the
+      internet; the admin dashboards are bound to loopback and only republished to my own tailnet
+      over HTTPS, and the metrics and log shippers never leave the docker network. Pi-hole is the
+      one thing the LAN talks to directly, because it has to answer DNS.
+    </figcaption>
+  </figure>
+
+  <h3>The dashboards behind the digest</h3>
+  <p>
+    The digest is deliberately the thing I read every day so I don't have to open these. But the
+    same sources are all graphed, and the boards are where a flagged day actually gets diagnosed.
+    All three are bound to loopback and reached only over Tailscale.
+  </p>
+
+  <figure class="shot">
+    <img src="../assets/img/home-grafana-node.webp" alt="Grafana node-exporter dashboard showing CPU, load, RAM, swap, root filesystem gauges and time-series for a Raspberry Pi" loading="lazy" width="1527" height="514">
+    <figcaption>
+      Host health: the node-exporter board the digest pulls its disk, memory, swap and temperature
+      thresholds from. Roughly six days uptime, RAM around half, root filesystem under 15%.
+    </figcaption>
+  </figure>
+
+  <figure class="shot">
+    <img src="../assets/img/home-crowdsec.webp" alt="CrowdSec overview dashboard separating locally detected attacks from the downloaded community blocklist" loading="lazy" width="1527" height="720">
+    <figcaption>
+      The security signal, split so it can't be misread: local bans (attacks actually detected on
+      this box) sit at zero, while the ~1.3k-entry community blocklist blocks known-bad IPs
+      preemptively, before they ever reach the Pi.
+    </figcaption>
+  </figure>
+
+  <figure class="shot">
+    <img src="../assets/img/home-pihole.webp" alt="Pi-hole admin dashboard showing total queries, percentage blocked, query types and upstream servers" loading="lazy" width="840" height="682">
+    <figcaption>
+      DNS filtering: ~124k queries in a day, about 35% of them blocked against a 1.4M-domain list.
+      The digest only asks one question of this service, whether blocking is still enabled, since
+      DNS keeps resolving fine even when it silently isn't.
+    </figcaption>
+  </figure>
 
   <h2>Challenges &amp; what I'd do differently</h2>
-  <p>
-    The interesting part of any infrastructure project isn't the list of tools — it's what
-    broke, what was quietly wrong, and what it took to notice.
-  </p>
+  <div class="findings">
 
-  <div class="pair-grid">
   <div class="card">
-    <span class="tag">Challenge</span>
-    <h4>I was running two overlapping monitoring stacks without realizing it</h4>
+    <span class="tag">Finding</span>
+    <h3>Audit what's actually running before adding more</h3>
     <p>
       An earlier setup (OpenObserve + Vector) had been layered on top of the existing
-      Prometheus/Grafana/Loki pipeline, duplicating exactly the same metrics and logs through
-      a second path. It was silently eating CPU and memory for zero added value, and the
-      OpenObserve build in use was a pre-release version (<code>v0.14.1-rc1</code>) with far less
-      production track record than the tools it was duplicating.
+      Prometheus/Grafana/Loki pipeline, duplicating exactly the same metrics and logs through a
+      second path, and the OpenObserve build in use was a pre-release (v0.14.1-rc1) with far less
+      track record than the tools it duplicated. Removing it dropped load average from
+      <strong>2.97 to roughly 1.0–1.6</strong> and freed over half a gigabyte of swap: a bigger win
+      than any tuning would have delivered.
     </p>
-  </div>
-  <div class="card lesson">
-    <span class="tag">Lesson</span>
-    <h4>Audit what's actually running before adding more</h4>
-    <p>
-      It's easy to bolt on a new tool to solve a problem an existing tool already solves,
-      especially on a box that accumulates services over time. Removing the duplicate stack
-      dropped load average from <strong>2.97</strong> down to roughly <strong>1.0–1.6</strong>
-      and freed up over half a gigabyte of swap — a bigger performance win than any tuning
-      would have delivered.
-    </p>
-  </div>
   </div>
 
-  <div class="pair-grid">
   <div class="card">
-    <span class="tag">Challenge</span>
-    <h4>Several admin dashboards were reachable by anyone on the Wi-Fi</h4>
+    <span class="tag">Finding</span>
+    <h3>"It's just the LAN" is not a security boundary</h3>
     <p>
-      Grafana, Prometheus, Loki, and Portainer were all bound to <code>0.0.0.0</code> —
-      reachable by any device on the local network. Prometheus and Loki don't even have a
-      built-in login screen, so that meant metrics, logs, and container controls were
-      sitting open to anyone who joined the Wi-Fi.
+      Grafana, Prometheus, Loki and Portainer were bound to <code>0.0.0.0</code>, and the first two have no login screen at all, so metrics, logs and container controls sat open to any device that joined the Wi-Fi. Everything is now bound to <code>127.0.0.1</code> and reached over Tailscale, except Pi-hole's exporter, which runs host-network and needed <code>iptables</code> rules instead.
     </p>
-  </div>
-  <div class="card lesson">
-    <span class="tag">Lesson</span>
-    <h4>"It's just the LAN" is not a security boundary</h4>
-    <p>
-      Guest devices, IoT gadgets, and anything else on the same network can reach anything
-      bound to a public interface. I rebound every admin surface to <code>127.0.0.1</code>
-      and now reach them exclusively over Tailscale or an SSH tunnel — the services that
-      truly need LAN access (DNS, admin UI) are the only ones left open, and that was a
-      deliberate decision, not a default.
-    </p>
-  </div>
   </div>
 
-  <div class="pair-grid">
   <div class="card">
-    <span class="tag">Challenge</span>
-    <h4>One container ignored my port bindings entirely</h4>
+    <span class="tag">Finding</span>
+    <h3>"Up" isn't the same as "correct"</h3>
     <p>
-      Pi-hole's exporter runs in Docker's <code>host</code> network mode for DNS reasons,
-      which means Docker's normal port-binding controls simply don't apply to it — it was
-      exposed to the whole LAN no matter what the compose file said.
+      Prometheus reported the Pi-hole exporter as scraping fine while every value it returned was zero: no <code>extra_hosts</code> entry, so <code>host.docker.internal</code> never resolved, and an admin password that had drifted from <code>.env</code>. A scrape target can report healthy while every number it returns is garbage.
     </p>
   </div>
-  <div class="card lesson">
-    <span class="tag">Lesson</span>
-    <h4>Host-network containers need firewall rules, not port config</h4>
-    <p>
-      I locked it down with <code>iptables</code> rules restricting the port to loopback,
-      Tailscale, and the Docker bridge, then persisted the rule with
-      <code>netfilter-persistent</code> so it survives a reboot. Compose-level settings
-      aren't enough once a container opts out of Docker's network isolation.
-    </p>
-  </div>
+
   </div>
 
-  <div class="pair-grid">
-  <div class="card">
-    <span class="tag">Challenge</span>
-    <h4>A metrics exporter was silently broken and nothing said so</h4>
-    <p>
-      Prometheus showed the Pi-hole exporter as scraped fine, but every value was zero — two
-      stacked root causes. The Prometheus container had no <code>extra_hosts</code> entry, so
-      <code>host.docker.internal</code> (needed to reach a host-networked container) didn't
-      resolve at all. Separately, Pi-hole's real admin password had drifted from
-      <code>.env</code>, because that variable only seeds the password on first-ever init, not
-      on every restart.
-    </p>
-  </div>
-  <div class="card lesson">
-    <span class="tag">Lesson</span>
-    <h4>"Up" isn't the same as "correct"</h4>
-    <p>
-      A scrape target can report healthy while every number it returns is garbage. Fixed both:
-      added <code>extra_hosts: host-gateway</code> to Prometheus, reset the password to match
-      <code>.env</code>. Real query and block stats now flow — the same fix pattern (missing
-      <code>extra_hosts</code>) turned up again fixing a blackbox→Pi-hole uptime probe, which
-      also needed a dedicated module sending <code>Host: pi.hole</code> to get past Pi-hole's
-      anti-DNS-rebinding check — and, in the process, a stale single-file config bind mount
-      (Docker keeps referencing the old inode after an in-place edit; only
-      <code>--force-recreate</code> picks up the change) that's worth remembering for any
-      other config mounted the same way on this box.
-    </p>
-  </div>
-  </div>
-
-  <h2>Where things stand</h2>
-  <div class="stats">
-    <div class="stat">
-      <div class="label">Load average</div>
-      <div class="value"><span class="before">2.97</span><span class="arrow">→</span><span class="after">~1.0–1.6</span></div>
-    </div>
-    <div class="stat">
-      <div class="label">Swap in use</div>
-      <div class="value"><span class="before">1.5GB</span><span class="arrow">→</span><span class="after">~1.0GB ↓</span></div>
-    </div>
-    <div class="stat">
-      <div class="label">Containers running</div>
-      <div class="value"><span class="before">14</span><span class="arrow">→</span><span class="after">12</span></div>
-    </div>
-    <div class="stat">
-      <div class="label">Ports open to internet</div>
-      <div class="value"><span class="after">0</span></div>
-    </div>
-  </div>
-
-  <div class="photo photo-wide">
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18M7 15l4-6 4 3 4-8"/></svg>
-    <span class="photo-label">SCREENSHOT: Grafana "system health" board, before/after</span>
-  </div>
-
-  <div class="prose">
   <h2>What's next</h2>
-  <p>Every real infrastructure project has an open list. Mine:</p>
+  <p>Still on the bench:</p>
   <ul>
     <li>Pin container image versions instead of tracking <code>:latest</code>, so a bad
-      upstream release can't surprise me — plus update notifications via Diun.</li>
-    <li>Automated, scheduled backups of Docker volumes, Pi-hole config, and dashboards —
-      right now they only exist on one disk.</li>
+      upstream release can&#39;t surprise me, plus update notifications via Diun.</li>
+    <li>Automated, scheduled backups of Docker volumes, Pi-hole config, and dashboards. Right now they only exist on one disk.</li>
     <li>Turn off the desktop GUI that's still enabled but unused, now that everything is
       managed headlessly.</li>
     <li>Confirm SSH is locked to key-only authentication.</li>
@@ -357,36 +385,12 @@
       Immich are the leading candidates).</li>
   </ul>
 
-  <h2>Why this matters</h2>
-  <p>
-    None of these tools are exotic — Docker, Prometheus, Grafana, and a firewall are
-    industry standard. What this project actually demonstrates is the less glamorous half
-    of infrastructure work: auditing a running system for redundancy and exposure,
-    tightening a security boundary that looked fine until you checked it, and making a
-    deliberate, documented tradeoff between automation and stability rather than defaulting
-    to "auto-update everything" or "update nothing." That's the same judgment call that
-    shows up in production systems at any scale — just with a much smaller (and quieter)
-    box to prove it on.
-  </p>
-
-  <div class="resume-box">
-    <h4>Resume line</h4>
-    <p style="margin:0;">
-      Designed and hardened a self-hosted infrastructure stack (Docker Compose, Prometheus,
-      Grafana, Loki, CrowdSec, Tailscale) on Linux; audited and eliminated a redundant
-      monitoring pipeline, closed unintended LAN-wide exposure on five admin services, and
-      scoped automated patching by risk tier — cutting system load by ~50% and running with
-      zero externally exposed ports.
-    </p>
-  </div>
-
   <p style="margin-top:2.5rem;">
-    <a class="link-arrow" href="../index.html#projects">
+    <a class="link-arrow" href="../index.html#work">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg);"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       Back to all projects
     </a>
   </p>
-  </div>
 
 </main>
 
@@ -397,6 +401,6 @@
   </div>
 </footer>
 
-<script src="../assets/js/main.js"></script>
+<script src="../assets/js/main.js?v=101"></script>
 </body>
 </html>
