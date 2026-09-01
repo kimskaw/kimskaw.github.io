@@ -444,6 +444,12 @@
         <div class="chips">
           <span class="chip seed">severity = critical<span class="lbl">seeded</span></span>
           <span class="chip seed">remote_ip = 45.33.32.156<span class="lbl">seeded</span></span>
+          <span class="chip seed">reputation = hostile<span class="lbl">seeded</span></span>
+        </div>
+        <p class="smalllab" style="margin-top:12px">reputation lookup, before the gate ran</p>
+        <div class="chips">
+          <span class="chip cite">AbuseIPDB = 92/100<span class="lbl">platform</span></span>
+          <span class="chip cite">GreyNoise = malicious<span class="lbl">platform</span></span>
         </div>
         <p class="smalllab" style="margin-top:12px">not available</p>
         <div class="chips">
@@ -454,6 +460,12 @@
           <code style="font-family:var(--mono)">WasExecutingWhileDetected</code>, a KQL enrichment
           scoped to this device and threat, not the model's prose. When that query returns nothing,
           the gate says so instead of guessing.</p>
+        <p style="font-size:12px;color:var(--muted);margin:9px 0 0">
+          <code style="font-family:var(--mono)">reputation</code> is looked up in the same
+          enrichment step, never by the gate, which makes no network calls. Severity says the
+          <em>detection</em> was serious; it never says the address is hostile, so blocking rests on
+          two providers agreeing. One provider alone is not corroboration and the gate abstains; a
+          provider that disagrees, GreyNoise calling it a benign scanner, is a denial.</p>
       </div>
 
       <div>
@@ -466,7 +478,7 @@
           </div>
           <div class="vrow ok">
             <span class="vaction">block_ip</span>
-            <span class="vwhy">one address, marked remote, routable</span>
+            <span class="vwhy">remote address, reported hostile by two sources</span>
             <span class="pill ok">AUTHORIZE</span>
           </div>
           <div class="vrow deny">
@@ -527,7 +539,8 @@
       <div class="num">
         <div class="lab">Wrongful action</div>
         <div class="val"><span class="was">30.52%</span> → <span class="now">4.78%</span></div>
-        <div class="sub">Acting on what the model says, versus behind the gate.</div>
+        <div class="sub">Acting on what the model says, versus behind the gate. Populations
+          differ: see the note below.</div>
       </div>
       <div class="num">
         <div class="lab">Held for a human</div>
@@ -549,7 +562,10 @@
     <p style="font-family:var(--mono);font-size:11.5px;color:var(--muted);margin:14px 0 0">
       Measured on the configuration that actually ships, with decision-critical facts seeded from the
       incident before the gate runs. Handing the model's raw claims straight to the gate instead
-      gives 45.84% held and 48.95% missed; the difference is what the seeding buys.</p>
+      gives 45.84% held and 48.95% missed; the difference is what the seeding buys. The two
+      wrongful-action figures are not one population: 30.52% is the ungated baseline over all 4,000
+      incidents, 4.78% covers the 3,073 decidable incidents inside the faithful-evidence set, and
+      corrupted evidence is the separate 16.48% to 7.62% tile.</p>
   </section>
 
   <!-- LANE 5 -->

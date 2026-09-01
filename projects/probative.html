@@ -27,38 +27,8 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400..800&display=swap" rel="stylesheet">
 <style>
 
-  .pd-root {
-    --bg:#f0f3f4; --card:#ffffff; --ink:#1a2226; --muted:#59696f;
-    --border:#d7dfe2; --border-strong:#b9c5c9;
-    --accent-teal:#0c7686; --accent-teal-dim:#dbeef1;
-    --accent-amber:#a2650f; --accent-amber-dim:#f6e6cf;
-    --accent-green:#267a52; --accent-green-dim:#e2f2e9;
-    --accent-red:#b3372c; --accent-red-dim:#f8e6e3;
-    --accent-violet:#6b4ea8; --accent-violet-dim:#e9e3f6;
-    --example-bg:#eef2f3;
-  }
-  @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .pd-root, body:not([data-theme="light"]) .pd-root, .pd-root:not([data-theme="light"]) {
-      --bg:#10171a; --card:#182124; --ink:#e8eef0; --muted:#93a5ab;
-      --border:#2b363a; --border-strong:#3c4a4f;
-      --accent-teal:#55c6d6; --accent-teal-dim:#1c343a;
-      --accent-amber:#e3a750; --accent-amber-dim:#3a2c17;
-      --accent-green:#6bd39d; --accent-green-dim:#14301f;
-      --accent-red:#e57468; --accent-red-dim:#35201c;
-      --accent-violet:#b49ae8; --accent-violet-dim:#241d38;
-      --example-bg:#0d1416;
-    }
-  }
-  :root[data-theme="dark"] .pd-root, body[data-theme="dark"] .pd-root, .pd-root[data-theme="dark"] {
-    --bg:#10171a; --card:#182124; --ink:#e8eef0; --muted:#93a5ab;
-    --border:#2b363a; --border-strong:#3c4a4f;
-    --accent-teal:#55c6d6; --accent-teal-dim:#1c343a;
-    --accent-amber:#e3a750; --accent-amber-dim:#3a2c17;
-    --accent-green:#6bd39d; --accent-green-dim:#14301f;
-    --accent-red:#e57468; --accent-red-dim:#35201c;
-    --accent-violet:#b49ae8; --accent-violet-dim:#241d38;
-    --example-bg:#0d1416;
-  }
+  /* Palette comes from assets/css/style.css (:root .pd-root.pd-root.pd-root),
+     which aliases every token to a site token. No private palette here. */
   .pd-root, .pd-root * { box-sizing:border-box; }
   .pd-root { margin:0; background:var(--bg); color:var(--ink);
     font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; padding:0; }
@@ -167,7 +137,7 @@
       </p>
       <div class="article-meta">
         <span>Personal detection-engineering project</span>
-        <span>Python · fully local, no cloud inference</span>
+        <span>Python · local inference by default</span>
       </div>
       <div class="tags">
         <span class="chip">Sigma</span>
@@ -198,70 +168,42 @@
     </div>
   </header>
 
-  <div class="prose">
-  <p>
-    Everything runs locally on one machine, and no security data ever leaves the host for cloud
-    inference.
-  </p>
-  </div>
-
   <div class="keypanel">
     <p class="kp-label">In short</p>
     <ul>
       <li><b>The problem.</b> An LLM triaging a security alert writes fluent, confident prose whether or not any of it is true.</li>
       <li><b>The approach.</b> Structure over prompting: the model only explains what the evidence shows, and code or a second model makes every decision that carries consequences.</li>
-      <li><b>What holds up.</b> A model-free check catches 13 of 13 hand-crafted fabrications, refuses 89 of 90 fabricated counts, and wrongly rejects 0 of 9 genuine findings. Whether the second, model-based pass earns its cost is still being measured, and the answer may be no. And I found a flaw in my own testing method and rebuilt it.</li>
-      <li><b>Stated plainly.</b> Just 64 investigated cases so far, and detection recall is 41.7%. Every number here rests on a small operational history, reported rather than rounded, not a production estate.</li>
+      <li><b>What holds up.</b> A model-free check catches 13 of 13 hand-crafted fabrications, refuses 89 of 90 fabricated counts, wrongly rejects 0 of 9 genuine findings. Whether the second, model-based pass earns its cost is still being measured, and the answer may be no.</li>
+      <li><b>The error I found in my own method.</b> I first scored candidate verifiers on how often
+        they agreed with the model I already trusted, concluded small models cannot verify, and was
+        wrong: agreement measures sameness, not correctness. Rebuilt with the answer key written
+        before any model ran (<a href="#method">section 06</a>).</li>
+      <li><b>Stated plainly.</b> 64 investigated cases, detection recall 41.7%. Every number rests on a small operational history, reported rather than rounded, not a production estate.</li>
     </ul>
   </div>
 
   <p class="sec-kicker"><span class="kn">01</span> Design</p>
-  <h2>What it does</h2>
+  <h2>How it works</h2>
   <ul>
-    <li>
-      <strong>Collects and normalises</strong>: endpoint, honeypot, and multi-host logs, all behind
-      one adapter interface (Sysmon via Loki, an isolated SSH honeypot, Wazuh as a multi-host
-      collector). The event store is append-only, so re-reading the same time window changes nothing.
-    </li>
-    <li>
-      <strong>Decides what deserves attention</strong>: nine SQL projections that expose the raw JSON as
-      queryable columns, and 21
-      Sigma rules compiled to SQL, each carrying an ATT&amp;CK technique, a severity and a
-      false-positive note. <strong>Severity is fixed here, before any model runs.</strong> Coverage is
-      deliberately narrow, not a strength to lean on: recall is 41.7%, and the point is not how much
-      these rules catch but what happens to a finding once one fires.
-    </li>
-    <li>
-      <strong>Filters noise in a fixed order, and the order is load-bearing</strong>: allowlist first,
-      then de-duplication by fingerprint, then known-benign classification. The same fingerprint
-      fifty times makes exactly one case.
-    </li>
-    <li>
-      <strong>Investigates with exactly three read-only tools</strong>: the case's events, cached
-      reputation data, the rule's own text. No shell, no filesystem, no network, no writes; a test
-      asserts that list holds those three and nothing else.
-    </li>
-    <li>
-      <strong>Retrieves precedent, without letting it become evidence</strong>: the model can read past
-      cases that already passed verification, found by keyword and by local embedding search with
-      the two rankings fused rather than scored (RAG). It cannot cite them. A claim can only ever
-      cite events from its own case.
-    </li>
-    <li>
-      <strong>Verifies in two passes</strong>: a deterministic pass first, which is authoritative,
-      then a second AI model, the verifier, that must not be the first one.
-    </li>
-    <li>
-      <strong>Records every model call</strong>: one append-only row per LLM call, prompt and
-      response verbatim, so any conclusion stays checkable long after the fact. The full audit trail
-      is section 07.
-    </li>
+    <li><strong>Collects and normalises</strong> endpoint, honeypot and multi-host logs behind one
+      adapter interface. The event store is append-only.</li>
+    <li><strong>Decides what deserves attention</strong> with 21 Sigma rules compiled to SQL, each
+      carrying an ATT&amp;CK technique and a severity. <strong>Severity is fixed here, before any
+      model runs.</strong></li>
+    <li><strong>Filters noise in a fixed order, and the order is load-bearing</strong>: allowlist,
+      then de-duplication, then known-benign.</li>
+    <li><strong>Investigates with exactly three read-only tools</strong>. No shell, no filesystem,
+      no network, no writes, and a test asserts that list holds those three and nothing else.</li>
+    <li><strong>Retrieves precedent without letting it become evidence</strong>. The model can read
+      past verified cases and cannot cite them.</li>
+    <li><strong>Verifies in two passes</strong>: a deterministic pass first, which is authoritative,
+      then a second model that must not be the first one.</li>
+    <li><strong>Records every model call</strong> verbatim, one append-only row each (section 05).</li>
   </ul>
 
   <h3>Where the model is, and is not</h3>
   <p>
-    Only two stages in the whole pipeline are an LLM, and neither can open a case, set a severity,
-    or write to the evidence store.
+    Two stages are an LLM. Neither can open a case, set a severity, or write to the evidence store.
   </p>
 
   <div class="table-scroll">
@@ -269,27 +211,25 @@
     <tr><th>Stage</th><th>Decides</th><th>Mechanism</th></tr>
     <tr><td>Detection</td><td>What is worth looking at</td><td>Sigma rules compiled to SQL</td></tr>
     <tr><td>Noise filter</td><td>What is dropped before any cost</td><td>Ordered deterministic rules</td></tr>
-    <tr><td><strong>Investigator</strong></td><td><strong>Nothing, only explains</strong></td><td><code>qwen3.8:27b</code>, three read-only tools</td></tr>
+    <tr style="background:var(--accent-violet-dim)"><td><strong>Investigator</strong> <span class="mono" style="color:var(--accent-violet);font-size:0.8em">LLM</span></td><td><strong>Nothing, only explains</strong></td><td><code>qwen3.8:27b</code>, three read-only tools</td></tr>
     <tr><td>Write guards</td><td>Whether the finding persists at all</td><td>Pydantic schema + cited-event existence</td></tr>
     <tr><td>Pass A</td><td>Whether every cited figure appears in the evidence</td><td>Deterministic, no model call</td></tr>
-    <tr><td><strong>Pass B</strong></td><td><strong>Whether the claim follows</strong></td><td>A second AI model, the verifier: <code>gemma4:26b</code>, must differ from A</td></tr>
+    <tr style="background:var(--accent-violet-dim)"><td><strong>Pass B</strong> <span class="mono" style="color:var(--accent-violet);font-size:0.8em">LLM</span></td><td><strong>Whether the claim follows</strong></td><td>A second AI model, the verifier: <code>gemma4:26b</code>, must differ from A</td></tr>
     <tr><td>Human</td><td>The verdict on anything the pipeline will not close</td><td>Analyst console</td></tr>
   </table>
   </div>
 
   <p>
-    Pass B is kept deliberately ignorant. It sees the raw events and the single claim being
-    judged, and nothing else: not the investigator's summary, not its reasoning, not how confident
-    it was, not the past cases that were retrieved. Any of those would tempt it to agree instead of
-    check. A high confidence score is a reason to look harder, never a reason to believe.
+    Pass B is kept deliberately ignorant. It sees the raw events and the single claim being judged,
+    and nothing else: not the summary, not the reasoning, not the confidence score, not the
+    retrieved precedent. Any of those would tempt it to agree instead of check. High confidence is
+    a reason to look harder, never a reason to believe.
   </p>
 
-  <p class="sec-kicker"><span class="kn">02</span> Architecture</p>
-  <h2>The architecture, end to end</h2>
+  <h3>The same map as a diagram</h3>
   <p>
-    The same map as a diagram, from a log line to a recorded verdict. Everything above the two
-    model calls decides what deserves attention; everything below them is a check the model cannot
-    influence.
+    From a log line to a recorded verdict. Everything above the two model calls decides what
+    deserves attention; everything below them is a check the model cannot influence.
   </p>
   <p>
     All inference runs locally: SQLite, Ollama, no message queues, no web framework. Reputation
@@ -763,48 +703,44 @@
 
   </div>
 
-  <p class="sec-kicker"><span class="kn">03</span> Defense</p>
+  <p class="sec-kicker"><span class="kn">02</span> Defense</p>
   <h2>Prompt injection, answered by subtraction</h2>
   <p>
-    Fabrication is the failure this pipeline is built around. Prompt injection is the other one,
-    and this pipeline invites it: it reads honeypot sessions, so some of the text reaching the
-    model was typed by an attacker, and a Sysmon command line is no safer. The rule is blunt:
-    <strong>all telemetry is hostile input</strong>, wherever it came from. Getting that rule
-    applied everywhere took two attempts, which is a story further down the page.
+    This pipeline invites prompt injection: it reads honeypot sessions, so some of the text reaching
+    the model was typed by an attacker, and a Sysmon command line is no safer. The rule is blunt,
+    <strong>all telemetry is hostile input</strong>. Getting it applied everywhere took two
+    attempts, which is a story further down the page.
   </p>
   <p>
-    The defence is not a cleverer prompt but subtraction. Every piece of event text passes one
-    sanitiser before any model sees it: a denylist of known instruction markers, each replaced with
-    a visible token rather than deleted, because deleting a marker from text an attacker wrote can
-    splice a new one together out of what surrounds it. A denylist against natural language is
-    leaky by nature, and the design does not pretend otherwise. The attacker's prose still reaches
-    the model, because the prose is the evidence; what gets defused is the scaffolding that would
-    let it pose as an instruction. The same sanitiser covers enrichment payloads, the verifier's
-    inputs, and the claim sentence itself.
+    The defence is subtraction. Every piece of event text passes one sanitiser before any model sees
+    it, replacing known instruction markers with a visible token rather than deleting them, because
+    deleting a marker can splice a new one out of what surrounds it. The attacker's prose still
+    reaches the model, because the prose is the evidence. What gets defused is the scaffolding that
+    would let it pose as an instruction.
   </p>
   <p>
-    Measured directly, the denylist catches 7 of 7 literal phrases and 1 of 13 evasions. Leetspeak,
-    a Cyrillic character, a zero-width space, another language, base64, and a phrase split across two
-    commands all reach the model untouched. The denylist is not a defence, and the code has always
-    said so. What actually contains an injection is structural, and that is what the rest of this
-    section is: read-only tools, severity decided before any model runs, and every cited token
-    checked against stored evidence. Six evasion families were run through the full pipeline against
-    matched controls, and severity moved zero times.
+    The denylist is not the defence, and the code has always said so. Measured directly:
+  </p>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Literal phrases</div><div class="value">7 / 7 caught</div></div>
+    <div class="stat"><div class="label">Evasions</div><div class="value">1 / 13 caught</div></div>
+    <div class="stat"><div class="label">Evasion families</div><div class="value">6 of 6 tested</div></div>
+    <div class="stat"><div class="label">Severity moved</div><div class="value">0 times</div></div>
+  </div>
+
+  <p>
+    Leetspeak, a Cyrillic character, a zero-width space, another language, base64 and a phrase split
+    across two commands all reach the model untouched. What contains an injection is structural:
+    read-only tools, severity fixed before any model runs, every cited token checked against stored
+    evidence.
   </p>
   <p>
-    The other subtraction is capability. The investigator's three tools were chosen for what they
-    cannot do: an injected instruction can ask for a shell, a file write, an outbound request, or
-    a change to the case, and none of those verbs exist in the toolset, so the most a successful
-    injection can command is another read of evidence the model already has.
-  </p>
-  <p>
-    What subtraction buys is that injection degrades into hallucination. A prompt that steers the
-    model cannot raise a severity, open a case, or write to the store, because the model never had
-    those powers. The most it can do is make the model write a wrong finding, and a wrong finding
-    faces the same citation checks and the same second model as an honest mistake. The one thing
-    sanitisation cannot prevent is a model talked out of reporting: a case whose investigator
-    produces nothing usable is not closed quietly but handed to a human, which is the fail-safe
-    for every other failure on this page.
+    The other subtraction is capability, and it is why injection degrades into hallucination. The
+    three tools were chosen for what they cannot do: an injected instruction can ask for a shell, a
+    file write, an outbound request or a change to the case, and none of those verbs exist in the
+    toolset. The most it achieves is a wrong finding, which faces the same checks as an honest
+    mistake. A case whose investigator produces nothing usable goes to a human, not quietly closed.
   </p>
 
   <figure class="mc-figure">
@@ -867,21 +803,17 @@
     </div>
   </div>
   <figcaption>
-    How prompt injection is contained. Three attacker-influenceable inputs pass through one
-    sanitiser before any model call, and even a phrase that slips the denylist degrades into a
-    wrong claim rather than an action, because the model was never given severity, writes, or a way
-    around the deterministic checks. The denylist itself catches 7 of 7 literal phrases and only 1
-    of 13 evasions; six evasion families were run through the real pipeline against matched controls,
-    and severity moved zero times.
+    Three attacker-influenceable inputs pass one sanitiser before any model call. A phrase that
+    slips the denylist degrades into a wrong claim rather than an action, because the model was
+    never given severity, writes, or a way around the deterministic checks.
   </figcaption>
   </figure>
 
-  <p class="sec-kicker"><span class="kn">04</span> Evidence</p>
+  <p class="sec-kicker"><span class="kn">03</span> Evidence</p>
   <h2>What it caught</h2>
   <p>
-    The checks are only worth anything if they refuse fabrication that looks real, so every finding
-    is run against them before it can stand. Here is what they caught, verbatim from the fixture,
-    from the blunt to the subtle. Each verdict was written before the check ever ran.
+    The checks are only worth anything if they refuse fabrication that looks real. Verbatim from the
+    fixture, each verdict written before the check ran.
   </p>
   <pre class="code-sample"><span class="ex-id">01_fabricated_event_id</span>
   <span class="ex-k">claim</span>  "An encoded PowerShell command was executed"
@@ -893,15 +825,11 @@
   <span class="ex-k">lie</span>    each octet is a number the evidence states; only the whole-token rule can catch it
   <span class="ex-caught">caught by Pass A: the full address never occurs as one token</span></pre>
   <p>
-    The second one is worth reading twice, because it shows what this check is. Pass A verifies
-    presence, not arithmetic: a figure with no matching token in the cited evidence cannot be real.
-    The naive way to check that looks for the digits anywhere in the text, and a fabricated 12 hides
-    comfortably inside a timestamp reading 2012. Splitting the evidence into whole tokens first
-    catches the invented address, and across a fixture of ninety invented counts it rejects 89, with
-    no new false rejections against the findings actually stored. The one survivor, 33, genuinely
-    appears in the evidence as its own token, which is the honest limit of the check: a figure that
-    happens to occur somewhere in the text gets through, and whether a real number is attached to
-    the right claim is the second model's problem, not this one's.
+    The second is worth reading twice. Pass A verifies presence, not arithmetic. The naive check
+    looks for the digits anywhere in the text, and a fabricated 12 hides inside a timestamp reading
+    2012. Splitting evidence into whole tokens first catches the invented address. The one survivor
+    of ninety, 33, genuinely appears as its own token: a figure that happens to occur in the text
+    gets through, and whether a real number is attached to the right claim is Pass B's problem.
   </p>
   <p>
     And one from the wild, not the fixture: a real certutil-download case investigated on
@@ -915,25 +843,32 @@
 <span class="ex-k">result</span>  <span class="ex-human">NEEDS_HUMAN</span></pre>
   <p>
     The username implies a desktop; nothing in the evidence states one. That
-    inference-dressed-as-observation is now its own fault class in the boundary set,
-    <code>username_implies_hardware</code>. It is one of the hand-authored fixtures the checkers are
-    scored against, a frozen benchmark that runs in CI with no model and no network. On it the
-    model-free pass catches 13 of 13 hand-crafted fabrications, 13 of 13 by the intended rule rather
-    than by luck, refuses 89 of 90 fabricated counts, and wrongly rejects 0 of 9 genuine findings.
-    Whether the second, model-based pass earns its cost is a separate question, still being measured.
+    inference-dressed-as-observation is now its own fault class,
+    <code>username_implies_hardware</code>, in a frozen benchmark that runs in CI with no model and
+    no network.
   </p>
 
-  <p class="sec-kicker"><span class="kn">05</span> The console</p>
+  <div class="stats">
+    <div class="stat"><div class="label">Fabrications caught</div><div class="value">13 / 13</div></div>
+    <div class="stat"><div class="label">By the intended rule</div><div class="value">13 / 13</div></div>
+    <div class="stat"><div class="label">Fabricated counts refused</div><div class="value">89 / 90</div></div>
+    <div class="stat"><div class="label">Wrongly rejected</div><div class="value">0 / 9</div></div>
+  </div>
+
+  <p class="sec-kicker"><span class="kn">04</span> The console</p>
   <h2>The analyst console</h2>
+  <div class="stats">
+    <div class="stat"><div class="label">Events stored</div><div class="value">990,247</div></div>
+    <div class="stat"><div class="label">Alerts raised</div><div class="value">106</div></div>
+    <div class="stat"><div class="label">Cases investigated</div><div class="value">64</div></div>
+    <div class="stat"><div class="label">Claims checked</div><div class="value">316</div></div>
+  </div>
+
   <p>
-    All of that produces rows in a SQLite file: 990,247 events, 106 alerts raised from them, 64
-    cases opened and investigated, 316 claims checked. The console is how a human reads them.
-  </p>
-  <p>
-    A local console over the same SQLite file: a triage queue, a case view where every claim links
-    to the raw event it cites, a Sigma rule editor that back-tests a rule against history before it
-    can be saved, and the metrics table. Built on stdlib <code>http.server</code>: no web
-    framework, no new dependency, and the orchestrator is untouched.
+    One SQLite file holds all of it. The console reads it: a triage queue, a case view where every
+    claim links to the raw event it cites, a Sigma rule editor that back-tests against history
+    before it can save, and the metrics table. Built on stdlib <code>http.server</code>, so no web
+    framework and no new dependency.
   </p>
 
   <figure class="diagram-wide">
@@ -948,67 +883,56 @@
   <figure class="diagram-wide">
     <img src="../assets/img/probative-console-case.webp" alt="The console case view for a passing case: the verification panel stating every claim is supported, four claims each citing stored events, the unknowns the finding had to declare, a recommended action, and retrieved precedent marked context only, beside the cached enrichment payloads" width="1300" height="1528" loading="lazy" decoding="async">
     <figcaption>
-      A case that passed. The verification panel carries both passes' reasoning, and below the
-      claims sit the three panels that keep the model honest: what it could <em>not</em> determine,
-      a recommended action, and the retrieved precedent, labelled context only and explicitly not
-      citable. The enrichment column on the right was fetched and cached before any model ran.
+      A case that passed. Below the claims sit the three panels that keep the model honest: what it
+      could <em>not</em> determine, a recommended action, and retrieved precedent, labelled context
+      only and explicitly not citable.
     </figcaption>
   </figure>
 
   <p>
-    The bind address is configurable, localhost by default, and the console refuses to start
-    without a password precisely because loopback stops being a boundary the moment a tunnel or a
-    reverse proxy forwards to it. It writes exactly three things: an analyst's verdict, a
-    detection rule that must compile before it saves, and <code>.env</code>. The password carries
-    the weight for all three; the last two are additionally refused on a non-loopback bind, a
-    defence in depth against misconfiguration rather than a boundary in itself. The
-    <code>.env</code> write is the sharpest privilege the console holds, because repointing a
-    model at a hosted endpoint would ship evidence off-host, which is exactly why it sits behind
-    both conditions.
+    Localhost by default, and it refuses to start without a password, because loopback stops being a
+    boundary the moment a tunnel forwards to it. It writes exactly three things: an analyst's
+    verdict, a rule that must compile first, and <code>.env</code>. The last two are also refused on
+    a non-loopback bind. The <code>.env</code> write is the sharpest privilege it holds, since
+    repointing a model at a hosted endpoint would ship evidence off-host.
   </p>
   <p class="provenance">
     Passwords are PBKDF2-hashed; every state-changing request is Origin-checked, so the cookie path
     cannot be ridden from another site.
   </p>
   <p>
-    Back-testing exists because a rule matching most of its logsource is a queue flood rather than a
-    detection, and breadth is only judged once there is enough history to judge it. Every number on
-    the metrics page is a query against the database rather than a counter kept while running, so a
-    crash mid-run cannot inflate it.
-  </p>
-
-
-  <p>
-    Storage, models, strictness and providers are editable from the console, written back to
-    <code>.env</code> with its comments preserved. Every field is declared in a validating registry,
-    so it refuses a verifier model equal to the investigator's, a retention window of zero, or any
-    key it does not declare.
+    Back-testing exists because a rule matching most of its logsource is a queue flood, not a
+    detection. Every metric is a query against the database rather than a running counter, so a
+    crash mid-run cannot inflate it. Settings written back to <code>.env</code> are declared in a
+    validating registry that refuses a verifier model equal to the investigator's, a retention
+    window of zero, or a key it does not declare.
   </p>
 
   <figure class="diagram-wide">
     <img src="../assets/img/probative-console-settings.webp" alt="The console settings page: investigator and verifier models each badged LOCAL, hosted-provider key fields with a warning that a hosted model receives the evidence verbatim, the verification strictness controls, and five reputation providers each marked CONFIGURED beside a masked value" width="1214" height="1444" loading="lazy" decoding="async">
     <figcaption>
-      Secrets are write-only: every provider key reads <strong>CONFIGURED</strong> beside a masked
-      field, and the page can replace a value but never receives the one already stored. The amber
-      note under the hosted-provider keys is the reason local inference is the default: a hosted
-      model would receive the evidence verbatim, internal hostnames and attacker-controlled honeypot
-      text included.
+      Secrets are write-only: a key reads <strong>CONFIGURED</strong> beside a masked field, and the
+      page can replace a value but never receives the stored one. The amber note is why local
+      inference is the default: a hosted model would receive the evidence verbatim.
     </figcaption>
   </figure>
 
-  <p class="sec-kicker"><span class="kn">06</span> Failures</p>
-  <h2>Four things that broke</h2>
+  <p class="sec-kicker"><span class="kn">05</span> Failures</p>
+  <h2>What broke, and what caught it</h2>
+  <p>
+    Four real defects, and the mechanism that made each one visible. The last of them is why the
+    ledger below exists in the shape it does.
+  </p>
 
   <div class="findings">
   <div class="card">
     <span class="tag">What broke</span>
     <h3>A schema validates form; only evidence validates truth</h3>
     <p>
-      Grammar-constrained decoding stopped the investigator from calling its tools, so it answered from
-      nothing: schema-perfect findings about attacks that never happened, on hosts that do not
-      exist, citing invented ids like <code>event-12345</code>. Guard 1, the schema, saw nothing
-      wrong with any of them; Guard 2, which checks every cited id against a real stored row,
-      caught <strong>every one</strong>.
+      Grammar-constrained decoding stopped the investigator calling its tools, so it answered from
+      nothing: schema-perfect findings about attacks that never happened, citing invented ids like
+      <code>event-12345</code>. Guard 1, the schema, saw nothing wrong. Guard 2, which resolves every
+      cited id against a stored row, caught <strong>every one</strong>.
     </p>
   </div>
   </div>
@@ -1034,9 +958,10 @@
     <h3>Testing the guard is not testing the thing that arms it</h3>
     <p>
       The retry cap was tested, but the query that picks up work only looked for freshly enriched
-      cases, so a returned case was stranded and the budget was never spent. A later audit found
-      the same shape in 86 other places: the noise filter's ordering was not merely untested but
-      <strong>unobservable</strong>, because no fixture ever built a case where two rules disagreed.
+      cases, so a returned case was stranded and the budget was never spent. A whole-project audit
+      later found 86 distinct issues, several sharing this shape. The worst of them: the noise
+      filter's ordering was not merely untested but <strong>unobservable</strong>, because no
+      fixture built a case where two rules disagreed.
     </p>
   </div>
 
@@ -1064,13 +989,11 @@
 
   </div>
 
-  <p class="sec-kicker"><span class="kn">07</span> Audit trail</p>
-  <h2>The ledger: every model call, on the record</h2>
+  <h3>The ledger: every model call, on the record</h3>
   <p>
-    One SQLite table, one row per call to a language model, written before the pipeline moves on.
-    Each holds the exact prompt sent and the exact response returned, verbatim, not a summary and
-    not a hash: a recent investigator row is a 3,896-character prompt and a 2,237-character response,
-    exactly as they went to the model and came back.
+    One SQLite table, one row per model call, written before the pipeline moves on. Each holds the
+    exact prompt and the exact response, verbatim, not a summary and not a hash: a recent
+    investigator row is a 3,896-character prompt and a 2,237-character response.
   </p>
 
   <p class="pullquote">"The model said so" is only checkable if the exact words survive. The ledger is what makes an AI's conclusion auditable months later instead of trusted in the moment.</p>
@@ -1089,37 +1012,32 @@
     <span class="tag">What it caught</span>
     <h3>A column that silently stayed empty</h3>
     <p>
-      The <code>tool_calls</code> column existed in the schema and nothing ever wrote to it: 256
-      rows of NULL. Nothing errored, no test failed, reports rendered, metrics computed. It hid that
-      <code>get_rule</code>, one of the investigator's three tools, had never worked, so every
-      finding in that window was written without the detection rule it rested on. The ledger is what
-      eventually made this visible. A missing row is the one thing that would have kept it hidden.
+      The <code>tool_calls</code> column existed and nothing ever wrote to it: 256 rows of NULL.
+      Nothing errored, no test failed, reports rendered, metrics computed. It hid that
+      <code>get_rule</code>, one of three tools, had never worked, so every finding in that window
+      was written without the detection rule it rested on. A missing row is the one thing that would
+      have kept it hidden.
     </p>
   </div>
   </div>
 
   <p>
-    Prompts carry honeypot text, which is attacker-controlled, so past a retention window the prompt
-    and response are replaced with a marker and a SHA-256. The row itself survives on purpose:
-    <code>COUNT(*)</code> still proves no call went unrecorded once the content is gone. Deleting
-    rows would destroy the very count the ledger exists for.
+    Prompts carry attacker-controlled honeypot text, so past a retention window the prompt and
+    response are replaced with a marker and a SHA-256. The row survives on purpose:
+    <code>COUNT(*)</code> still proves no call went unrecorded once the content is gone.
   </p>
 
-  <p class="sec-kicker"><span class="kn">08</span> Method</p>
+  <p class="sec-kicker" id="method"><span class="kn">06</span> Method</p>
   <h2>Agreement with an incumbent is not accuracy</h2>
   <p>
-    The verifier has to be a different model from the investigator, and two 17GB models will not
-    both stay loaded on a 24GB card, so every case pays for a model swap. A small verifier would
-    end that, so three challenger models were scored on how often they agreed with the current
-    one. The agreement was low, coin-toss low, and the conclusion wrote itself: closer to chance
-    than to competence, so small models cannot verify.
+    Two 17GB models will not both stay loaded on a 24GB card, so every case pays for a model swap.
+    A small verifier would end that, so three challengers were scored on how often they agreed with
+    the incumbent. Agreement was coin-toss low, and the conclusion wrote itself: small models cannot
+    verify.
   </p>
   <p>
-    That conclusion was wrong, because agreement measures sameness rather than correctness. It
-    treats the incumbent as right by definition, so every disagreement counts against the
-    challenger. Two experienced radiologists reading the same ambiguous scan disagree often enough
-    that the disagreement is a studied quantity in its own right, and scoring one against the other
-    would tell you the cases were hard, not that either doctor was bad.
+    That conclusion was wrong. Agreement measures sameness, not correctness. It treats the incumbent
+    as right by definition, so every disagreement counts against the challenger.
   </p>
 
   <p class="pullquote">Agreement tells you two models are the same. Whether either is right is a different question, and it needs an answer key written before either one runs.</p>
@@ -1129,6 +1047,13 @@
     a verifier must reject and legitimate claims it must keep, each with its verdict decided before
     any model saw it.
   </p>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Challengers scored</div><div class="value">3</div></div>
+    <div class="stat"><div class="label">Agreement with incumbent</div><div class="value">near chance</div></div>
+    <div class="stat"><div class="label">Clean against the key</div><div class="value">0 models</div></div>
+    <div class="stat"><div class="label">Pass B rejections</div><div class="value">12 / 225</div></div>
+  </div>
 
   <div class="table-scroll">
   <table>
@@ -1143,84 +1068,134 @@
   </div>
 
   <p>
-    The last two rows are the ones that decided it. Missing a fabrication is dangerous and
-    rejecting a good finding is merely expensive, so collapsing both into a single score hides
-    which mistake a model is actually making. And the answer key does not flatter anyone: re-run
-    today, nothing comes through it clean, the incumbent included. The small models did miss
-    fabrications, so the original verdict was right by accident and wrong in method, and the model
-    that agreed with the incumbent most often was not the one that caught the most fabrications.
+    The last two rows decided it. Missing a fabrication is dangerous and rejecting a good finding is
+    merely expensive, so one combined score hides which mistake a model is making. Re-run against the
+    key, nothing comes through clean, the incumbent included, and the model that agreed with it most
+    often was not the one that caught the most fabrications.
   </p>
   <p>
     The first method was itself the failure this project exists to catch: a confident, plausible,
-    unsupported conclusion, arrived at by a human rather than a model. It held two errors, not one:
-    it measured sameness instead of correctness, and I never checked the chance baseline that would
-    have shown the agreement I saw was barely above guessing. The
-    incumbent stays anyway, slower but safe: a verifier that lets even one fabrication through has
-    failed at the one thing it is for, and its latency is paid once per case, not per event, so here
-    correctness is the cheap thing to buy.
+    unsupported conclusion, arrived at by a human. Two errors, not one. It measured sameness instead
+    of correctness, and I never checked the chance baseline that would have shown the agreement was
+    barely above guessing. The incumbent stays, slower but safe: a verifier that lets one fabrication
+    through has failed at the only thing it is for.
   </p>
   <p>
-    Whether that second pass earns its cost is itself still open, and the answer may be no. Of the
-    claims the model-free pass accepted, the second pass rejected 12 of 225. Whether those
-    rejections were correct is being decided by blind human labelling, the answer key held in a
-    separate file, and the result will be published either way.
+    Whether that second pass earns its cost is still open, and the answer may be no. Of the claims
+    the model-free pass accepted, the second rejected 12 of 225. Blind human labelling is deciding
+    whether those rejections were correct, the key held in a separate file, and the result will be
+    published either way.
   </p>
 
-  <p class="sec-kicker"><span class="kn">09</span> Limits</p>
+  <p class="sec-kicker"><span class="kn">07</span> Extraction</p>
+  <h2>The model-free pass, taken out and made portable</h2>
+  <p>
+    Pass A's rule 2 asks one question: does every fact-shaped token in a claim appear in the evidence
+    it cites. It is the cheapest check here and the only one no model can overrule, so it is the
+    piece most worth having elsewhere. It now exists twice.
+    <a href="grounding-verifier.html">grounding-verifier</a> is that check extracted into a
+    dependency-free library with no model in it, carrying its own tests and running in a separate
+    Microsoft Sentinel pipeline.
+  </p>
+  <p>
+    Two implementations of one rule is a liability unless something measures them against each
+    other, so they sit behind one interface selected by <code>PROBATIVE_RULE2_BACKEND</code>. An
+    unknown value raises rather than falling back, because a typo that silently selects the
+    incumbent would make an A/B sweep report "no difference" for the one reason indistinguishable
+    from success.
+  </p>
+
+  <p class="pullquote">A backend switch that nothing measures is just a slower way to change behaviour by accident.</p>
+
+  <div class="table-scroll">
+  <table>
+    <tr><th>Corpus</th><th>Asks</th><th>Result</th></tr>
+    <tr><td>Fault injection, token-grounding claims</td><td>Same verdict as Pass A?</td><td><strong>12 of 12 agree (100%)</strong></td></tr>
+    <tr><td>Real genuine findings</td><td>Wrongly rejects a legitimate claim?</td><td><strong>2 of 37 (5.4%)</strong></td></tr>
+    <tr><td>Fabricated two-digit counts</td><td>Catches a number colliding with evidence?</td><td>Stricter: accepts 0 of 90, against Pass A's 1</td></tr>
+  </table>
+  </div>
+
+  <p>
+    Those two false positives are why <strong>Probative's implementation stays the default</strong>.
+    Not because it is better in the abstract, but because every number on this page was measured with
+    it. Stricter in one place and looser in another is what "equivalent" turns out to mean once
+    someone checks.
+  </p>
+  <p>
+    Extraction ran the other way too. Free of one pipeline's assumptions, the library grew the two
+    layers Probative does not need: a structured-claims check where every assertion must cite the
+    field that proves it, and an action-authorization gate deciding whether a proposed response may
+    run at all, with trust tiers, corroboration and a hash-chained ledger.
+  </p>
+
+  <p class="sec-kicker"><span class="kn">08</span> Limits</p>
   <h2>What these numbers do not cover</h2>
-  <ul>
-    <li><b>Detection recall is 41.7%.</b> Measured against a corpus of 20 attacks written from
-      ATT&amp;CK technique descriptions rather than from the rule files, because authoring one attack
-      per rule would score 100% by definition. No rule stayed silent on an attack it describes, so
-      nothing is broken: the misses are techniques nobody has written a rule for yet, named
-      individually in the project's documentation. And recall against a corpus you wrote yourself is
-      bounded by your own imagination, so a technique I did not think of is missing from the rules and
-      the test corpus alike. The blind spot is narrower, not closed.</li>
-    <li><b>Sample sizes are small.</b> 64 cases, 316 claims, 49 findings that reached the second
-      verification pass. Every rate derived from these carries a wide confidence interval, and the
-      project reports the interval rather than the percentage alone.</li>
-    <li><b>It runs on one machine and has never seen public internet traffic.</b> The honeypot ran on
-      an isolated local network with a simulated attacker, and the seven-day traffic baseline that
-      several measurements depend on has not been collected.</li>
-    <li><b>Two of the three noise-filter rules have never fired.</b> They have never been handed input
-      they could act on, so their real-world value is untested rather than disproven.</li>
-    <li><b>I wrote both the fabrications and the checks that catch them.</b> The benchmark scores show
-      the checks agree with my own idea of a fake, not an outside standard. Two catches were the
-      exception, real and unstaged: a batch of machine-generated fakes the code caught, and a subtle
-      claim the model rejected during a live investigation.</li>
-  </ul>
+  <div class="findings">
+    <div class="card">
+      <h3>Detection recall is 41.7%</h3>
+      <p>Measured against 24 attacks written from ATT&amp;CK technique descriptions rather than from
+        the rule files, since one attack per rule would score 100% by definition. No rule stayed
+        silent on an attack it describes, so the misses are techniques nobody has written a rule
+        for. Recall against a corpus you wrote yourself is bounded by your own imagination: the
+        blind spot is narrower, not closed.</p>
+    </div>
+    <div class="card">
+      <h3>The adversary is the author</h3>
+      <p>I wrote both the fabrications and the checks that catch them, so the scores show the checks
+        agree with my own idea of a fake, not an outside standard. Two catches were unstaged: a
+        batch of machine-generated fakes, and a subtle claim rejected during a live
+        investigation.</p>
+    </div>
+    <div class="card">
+      <h3>Never seen public internet traffic</h3>
+      <p>One machine, a honeypot on an isolated local network with a simulated attacker. The
+        seven-day traffic baseline several measurements depend on has not been collected.</p>
+    </div>
+    <div class="card">
+      <h3>Sample sizes are small</h3>
+      <p>49 findings reached the second verification pass. Every rate derived from these carries a
+        wide confidence interval, and the project reports the interval rather than the percentage
+        alone.</p>
+    </div>
+    <div class="card">
+      <h3>Two noise-filter rules have never fired</h3>
+      <p>They have never been handed input they could act on, so their real-world value is untested
+        rather than disproven.</p>
+    </div>
+  </div>
 
-  <blockquote>
-    Run against captured honeypot traffic and synthetic endpoint telemetry, not a production
-    estate.
-  </blockquote>
-
-  <p class="sec-kicker"><span class="kn">10</span> Conclusion</p>
-  <h2>What it comes down to</h2>
+  <h3>What it comes down to</h3>
   <div class="keypanel">
     <p class="kp-label">What the project shows</p>
     <ul>
       <li><b>Structure beats prompting for trust.</b> Strip the model's authority, no severity, no case creation, no writes, and its worst output degrades from a dangerous action into a claim the checks can catch.</li>
       <li><b>Verification has to be independent and adversarial.</b> Deterministic code checks the figures; a second, different model checks the reasoning, both kept blind to the investigator's own confidence.</li>
       <li><b>Measurement is where judgment shows.</b> The project's own worst error was a confident, unsupported conclusion, caught only by writing the answer key before the models ran.</li>
-      <li><b>Honest scope.</b> A prototype on captured and synthetic data across 64 cases, not a production deployment. The architecture is not original either: deterministic validation of model output and mandatory evidence citation both appear in published vendor and academic work. The one property worth defending is narrower, that the first verification pass contains no model, so unlike every model-based checker it cannot itself hallucinate.</li>
+      <li><b>Honest scope.</b> A prototype on captured and synthetic data across 64 cases. The
+        architecture is not original: deterministic validation of model output and mandatory evidence
+        citation both appear in published vendor and academic work. The one property worth defending
+        is narrower, that the first verification pass contains no model, so unlike every model-based
+        checker it cannot itself hallucinate.</li>
     </ul>
   </div>
 
   <p>
-    Most of the effort went into trying to prove the system did not work, and several times it did not.
-  </p>
-
-  <p>
-    The verifier was never meant to be a guarantee. All of this exists because a model will hand
-    you a fluent, confident answer that is wrong. The most confident wrong answer on this page was
-    not the model's, though. It was mine: <em>small models cannot verify</em>. I had measured
-    whether they agreed with the model I already trusted, and never whether they were right. Writing the answers
-    down first cost an afternoon of hand-labelling. Not doing it had already cost me a conclusion I
-    believed.
+    Most of the effort went into trying to prove the system did not work, and several times it did
+    not. All of this exists because a model will hand you a fluent, confident answer that is wrong.
+    The most confident wrong answer on this page was mine, though: <em>small models cannot
+    verify</em>. I had measured whether they agreed with the model I already trusted, never whether
+    they were right.
   </p>
 
   <p style="margin-top:2.5rem;">
+    <a class="link-arrow" href="grounding-verifier.html">
+      Related: grounding-verifier
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </p>
+
+  <p style="margin-top:1rem;">
     <a class="link-arrow" href="../index.html#work">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg);"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       Back to all projects
