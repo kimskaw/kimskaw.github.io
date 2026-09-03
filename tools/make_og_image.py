@@ -2,17 +2,16 @@
 
 WHY IT CARRIES NO NUMBERS.
 
-The first version of this card was hand-made and had four figures painted on
-it. Within one review round every one of them was wrong: it advertised
-"27.35% -> 0.00%" and "Nine instances" after the page had moved to
-32.17% -> 5.75% and ten, and it led with 0.00% -- the single number the page
-now spends a paragraph explaining it deliberately refuses to print, because it
-is an engine check rather than a result.
+The first version of this card was hand-made with four figures painted on it.
+Within one review round every one of them was stale: it was still advertising
+an old ratio and an old instance count after the page had moved on, and it led
+with the one number the page now spends a paragraph explaining it deliberately
+refuses to print, because that number is an engine check rather than a result.
 
-So a share of that link put the retracted headline in the preview, on a page
-whose subject is documents drifting away from the code. That is the same
-failure as the hand-typed verdicts table, in a new artifact created while
-fixing the hand-typed verdicts table.
+So sharing the link put a retracted headline in the preview, on a page whose
+subject is documents drifting away from the code. The same failure as the
+hand-typed verdicts table, in a new artifact created while fixing the
+hand-typed verdicts table.
 
 Two ways out: regenerate the card from the eval on every change, or take the
 numbers off it. Numbers off is better. A preview card is not a place anyone
@@ -81,9 +80,9 @@ def build():
 
     d.line([(64, 452), (150, 452)], fill=ACCENT, width=3)
 
-    # No count here either. It was "Nine", then "Ten", then "Eleven"
-    # within three review rounds -- a number on a preview card is a
-    # number nobody will remember to change.
+    # No count here either. It changed in three consecutive review
+    # rounds -- a number on a preview card is a number nobody will
+    # remember to change.
     d.text((64, 480), "One fail-open bug, found again and again,", font=sans(28), fill=TEXT)
     d.text((64, 518), "and the four-line rule that finally caught it.",
            font=sans(28), fill=AMBER)
