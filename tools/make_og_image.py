@@ -1,4 +1,4 @@
-"""Generate the social preview card for the grounding-verifier write-up.
+"""Generate the social preview cards for the site and the grounding-verifier write-up.
 
 WHY IT CARRIES NO NUMBERS.
 
@@ -31,8 +31,9 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1200, 630
-OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                   "assets", "img", "grounding-verifier-og.png")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(ROOT, "assets", "img", "grounding-verifier-og.png")
+OUT_SITE = os.path.join(ROOT, "assets", "img", "site-og.png")
 
 # Site palette (assets/css/style.css, dark theme).
 BG = (13, 16, 19)
@@ -44,21 +45,45 @@ ACCENT = (131, 165, 152)     # --accent
 AMBER = (215, 153, 33)       # --accent-2
 
 
+# Searched in order. The Windows faces are what the cards were designed
+# against; the rest keep the output legible for anyone who clones this.
+FONT_DIRS = [
+    r"C:\Windows\Fonts",
+    "/usr/share/fonts/truetype/dejavu",
+    "/usr/share/fonts/truetype/liberation",
+    "/usr/share/fonts",
+    "/System/Library/Fonts/Supplemental",
+    "/System/Library/Fonts",
+    "/Library/Fonts",
+]
+
+
 def _font(names, size):
+    """First of `names` that exists in any font dir, else PIL's default.
+
+    The default is bitmap and ignores `size`, so a missing font is visible
+    rather than silently producing a card at the wrong scale.
+    """
     for n in names:
-        p = os.path.join(r"C:\Windows\Fonts", n)
-        if os.path.exists(p):
-            try:
-                return ImageFont.truetype(p, size)
-            except Exception:
-                pass
+        for d in FONT_DIRS:
+            path = os.path.join(d, n)
+            if os.path.exists(path):
+                try:
+                    return ImageFont.truetype(path, size)
+                except Exception:
+                    pass
     return ImageFont.load_default()
 
 
+MONO = ["consola.ttf", "DejaVuSansMono.ttf", "LiberationMono-Regular.ttf", "Menlo.ttc", "Courier New.ttf"]
+SANS = ["segoeui.ttf", "DejaVuSans.ttf", "LiberationSans-Regular.ttf", "Helvetica.ttc", "Arial.ttf", "arial.ttf"]
+SANSB = ["seguisb.ttf", "segoeuib.ttf", "DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf", "Arial Bold.ttf", "arialbd.ttf"]
+
+
 def build():
-    mono = lambda s: _font(["consola.ttf"], s)
-    sans = lambda s: _font(["segoeui.ttf", "arial.ttf"], s)
-    sansb = lambda s: _font(["seguisb.ttf", "segoeuib.ttf", "arialbd.ttf"], s)
+    mono = lambda s: _font(MONO, s)
+    sans = lambda s: _font(SANS, s)
+    sansb = lambda s: _font(SANSB, s)
 
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
@@ -96,6 +121,47 @@ def build():
     return OUT
 
 
+def build_site():
+    """The card for the site root, shared far more often than any project page.
+
+    Same rule as the write-up card: it names the work and the idea, and carries
+    no measurement. It is a first impression, not evidence.
+    """
+    mono = lambda s: _font(MONO, s)
+    sans = lambda s: _font(SANS, s)
+    sansb = lambda s: _font(SANSB, s)
+
+    img = Image.new("RGB", (W, H), BG)
+    d = ImageDraw.Draw(img)
+    for x in range(0, W, 40):
+        d.line([(x, 0), (x, H)], fill=GRID)
+    for y in range(0, H, 40):
+        d.line([(0, y), (W, y)], fill=GRID)
+
+    d.text((64, 60), "KIMSKAW  ·  CLOUD & SECURITY ENGINEERING", font=mono(20), fill=FAINT)
+
+    d.text((64, 128), "Builds things that", font=sansb(72), fill=TEXT)
+    d.text((64, 212), "run themselves.", font=sansb(72), fill=TEXT)
+
+    d.text((64, 330), "Securing and automating Microsoft cloud environments,",
+           font=sans(30), fill=DIM)
+    d.text((64, 372), "and AI that gets verified rather than trusted.",
+           font=sans(30), fill=DIM)
+
+    d.line([(64, 452), (150, 452)], fill=ACCENT, width=3)
+
+    d.text((64, 484), "Entra ID  ·  Sentinel  ·  Purview  ·  Defender  ·  Intune",
+           font=sans(28), fill=TEXT)
+    d.text((64, 526), "Probative  ·  grounding-verifier  ·  a Raspberry Pi that runs the lab",
+           font=sans(28), fill=AMBER)
+
+    d.text((64, 574), "kimskaw.github.io", font=mono(19), fill=FAINT)
+
+    os.makedirs(os.path.dirname(OUT_SITE), exist_ok=True)
+    img.save(OUT_SITE, "PNG", optimize=True)
+    return OUT_SITE
+
+
 if __name__ == "__main__":
-    path = build()
-    print("%s  %d bytes" % (path, os.path.getsize(path)))
+    for path in (build(), build_site()):
+        print("%s  %d bytes" % (path, os.path.getsize(path)))
