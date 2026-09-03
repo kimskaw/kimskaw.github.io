@@ -7,13 +7,14 @@ Hand-built static site: vanilla HTML/CSS/JS, no build step, no frameworks, no tr
 ## Structure
 
 ```
-index.html                     single page: hero / certs / work / stack / contact
-projects/probative.html          LLM triage pipeline write-up (inlined SVG pipeline diagram)
+index.html                        single page: hero / certs / work / stack / contact
+projects/probative.html           LLM triage pipeline write-up (inlined SVG pipeline diagram)
 projects/grounding-verifier.html  the safety gate extracted from Probative
 projects/home-server.html         Raspberry Pi infrastructure write-up
-assets/css/style.css           design system (Gruvbox palette, v4 structure)
-assets/js/main.js              theme toggle, mobile nav, scroll reveal, scrollspy
-assets/img/                    images (.webp used on pages, originals kept as source)
+tools/make_og_image.py            regenerates the grounding-verifier social card
+assets/css/style.css              design system (Gruvbox palette, v4 structure)
+assets/js/main.js                 theme toggle, mobile nav, scroll reveal, scrollspy
+assets/img/                       images (.webp used on pages, originals kept as source)
 ```
 
 ## Design system
@@ -37,6 +38,7 @@ and the initial theme follows `prefers-color-scheme` unless the visitor has togg
 - Images ship as `.webp` with explicit `width`/`height` and `loading="lazy"` below the fold.
 - Article prose runs the full content width (`--content-max`, 1240px), matching tables and diagrams.
 - Nav markup is duplicated per page (no build step), change it in `index.html` and all of `projects/*.html` together.
+- Finding cards are capped at two sentences.
 
 ## Local preview
 
@@ -44,8 +46,3 @@ and the initial theme follows `prefers-color-scheme` unless the visitor has togg
 python -m http.server 8899
 # http://localhost:8899/
 ```
-
-## Copy conventions
-
-- No em dashes: use a colon for label/definition, a comma for an aside, a semicolon or full stop to join clauses, parentheses for a true parenthetical.
-- Finding cards are capped at two sentences.
