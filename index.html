@@ -111,7 +111,7 @@
     <!-- ============ WORK ============ -->
     <section id="work">
       <div class="section-head reveal"><span class="num">01</span><h2>Selected work</h2></div>
-      <p class="section-sub reveal">Five systems I built, broke, fixed, and wrote up in full, including the parts that went wrong.</p>
+      <p class="section-sub reveal">Three systems I built, broke, fixed, and wrote up in full, including the parts that went wrong.</p>
 
       <div class="projects-grid">
 
@@ -206,93 +206,6 @@
             </div>
             <div class="feature-links">
               <a class="link-arrow" href="projects/home-server.html">
-                Read the write-up
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              </a>
-            </div>
-          </div>
-        </article>
-
-        <article data-h="mission" class="feature-card reveal ai">
-          <div class="feature-body">
-            <p class="feature-tag">Offensive Security · Write-up</p>
-            <h3><a href="projects/mission-control.html">Mission Control: A Purple-Team AI</a></h3>
-            <p class="trail"><span>found</span><span>proved</span><span>approved</span><span>fixed</span></p>
-            <p class="summary">
-              An autonomous red team proves a vulnerability with working exploit code, then a blue
-              team writes the fix. Built so the exploit stage cannot exist until a human approves,
-              and no agent's "it worked" is trusted until code re-runs the attack itself.
-            </p>
-            <div class="feature-metrics">
-              <div class="m"><b>2</b><span>human gates</span></div>
-              <div class="m"><b>3</b><span>fabrication guards</span></div>
-              <div class="m"><b>0</b><span>agent-sent messages</span></div>
-            </div>
-            <div class="chips">
-              <span class="chip">Red Team</span><span class="chip">Blue Team</span>
-              <span class="chip">Human-in-the-loop</span><span class="chip">Local LLMs</span>
-            </div>
-            <div class="feature-links">
-              <a class="link-arrow" href="projects/mission-control.html">
-                Read the write-up
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              </a>
-            </div>
-          </div>
-        </article>
-
-        <article data-h="drape" class="feature-card reveal ai">
-          <div class="feature-body">
-            <p class="feature-tag">AI systems · Write-up</p>
-            <h3><a href="projects/drape.html">DRAPE: Browser-Based Virtual Try-On</a></h3>
-            <p class="trail"><span>built</span><span>crashed</span><span>rebuilt</span><span>shipped</span></p>
-            <p class="summary">
-              Drop in a garment photo and a person photo; DRAPE renders that person wearing it,
-              face and pose intact. Zero-dependency frontend driving a local ComfyUI pipeline over
-              HTTP and WebSocket, and a "missing node" error that was really an import crash.
-            </p>
-            <div class="feature-metrics">
-              <div class="m"><b>0</b><span>frontend deps</span></div>
-              <div class="m"><b>3</b><span>pipeline nodes</span></div>
-              <div class="m"><b>0</b><span>identity drift</span></div>
-            </div>
-            <div class="chips">
-              <span class="chip">Vanilla JS</span><span class="chip">ComfyUI API</span>
-              <span class="chip">WebSocket</span><span class="chip">CatVTON</span>
-              <span class="chip">Stable Diffusion</span>
-            </div>
-            <div class="feature-links">
-              <a class="link-arrow" href="projects/drape.html">
-                Read the write-up
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              </a>
-            </div>
-          </div>
-        </article>
-
-        <article data-h="jobdash" class="feature-card reveal ai">
-          <div class="feature-body">
-            <p class="feature-tag">AI systems · Write-up</p>
-            <h3><a href="projects/jobdash.html">JobDash: Resume Tailor AI</a></h3>
-            <p class="trail"><span>searched</span><span>scored</span><span>threaded</span><span>shipped</span></p>
-            <p class="summary">
-              Searches four job boards, scores every result against your resume with a model on your
-              own GPU, and tailors the resume to the ones worth applying for. The snags: a
-              background worker has nowhere to live in Streamlit, and two threads writing one JSON
-              file will clobber each other.
-            </p>
-            <div class="feature-metrics">
-              <div class="m"><b>4</b><span>job sources</span></div>
-              <div class="m"><b>40</b><span>LLM calls capped</span></div>
-              <div class="m"><b>0</b><span>external DB</span></div>
-            </div>
-            <div class="chips">
-              <span class="chip">Streamlit</span><span class="chip">LangChain</span>
-              <span class="chip">Playwright</span><span class="chip">Ollama</span>
-              <span class="chip">python-docx</span>
-            </div>
-            <div class="feature-links">
-              <a class="link-arrow" href="projects/jobdash.html">
                 Read the write-up
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </a>

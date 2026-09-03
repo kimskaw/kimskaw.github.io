@@ -8,14 +8,9 @@ Hand-built static site: vanilla HTML/CSS/JS, no build step, no frameworks, no tr
 
 ```
 index.html                     single page: hero / certs / work / stack / contact
-projects/probative.html        LLM triage pipeline write-up (inlined SVG pipeline diagram)
-projects/home-server.html      Raspberry Pi infrastructure write-up
-projects/nas-media.html        self-hosted Jellyfin media server write-up
-projects/mission-control.html  multi-agent AI orchestrator write-up
-projects/drape.html            browser-based AI virtual try-on write-up
-projects/recipe-kiosk.html     Android kitchen kiosk write-up
-projects/jobdash.html          resume-tailoring dashboard write-up
-projects/iterminal-docs.html   standalone widget setup guide (self-contained styles, not linked from index)
+projects/probative.html          LLM triage pipeline write-up (inlined SVG pipeline diagram)
+projects/grounding-verifier.html  the safety gate extracted from Probative
+projects/home-server.html         Raspberry Pi infrastructure write-up
 assets/css/style.css           design system (Gruvbox palette, v4 structure)
 assets/js/main.js              theme toggle, mobile nav, scroll reveal, scrollspy
 assets/img/                    images (.webp used on pages, originals kept as source)
