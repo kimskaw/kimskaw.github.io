@@ -589,6 +589,7 @@
           <li><b>install</b> pip install -e . from a clone</li>
           <li><b>needs</b> Python 3.11 or newer</li>
           <li><b>deps</b> none, standard library only</li>
+          <li><b>use it</b> as a library, or as the <code>gv</code> command</li>
           <li><b>fits</b> anywhere you already call a model</li>
         </ul>
       </div>
@@ -636,6 +637,55 @@ d = authorize(ISOLATE, claims, evidence)
 <span class="out">d.verdict     # ABSTAIN, so a human gets it</span>
 <span class="out">d.unmet       # executed is not grounded</span>
 <span class="out">              #   (cited field is 'false', claim says 'true')</span></pre>
+      </figure>
+    </div>
+
+    <div class="use" style="margin-top:26px">
+      <div class="use-col">
+        <div class="use-what">
+          <h3>Or write the rules as JSON, and never open Python</h3>
+          <p>The same rule, as data. A JSON document is loaded through the <em>same constructor</em>
+            the Python API uses, so a JSON rule and its Python twin carry the <b>same digest</b> and
+            reach the same decision. There is no second implementation to drift.</p>
+          <p>The loader refuses anything the constructor refuses, and it also refuses a key it does
+            not recognise. A misspelt <code>expcted</code> is an error, not a shrug: a rule that
+            loads with one of its requirements silently missing is the exact failure this library
+            exists to prevent.</p>
+        </div>
+
+        <div class="use-what" style="border-left-color:var(--amber)">
+          <h3>The prompt is built from the rules</h3>
+          <p>An earlier hand-written prompt asked the model for the <code>process</code> and never
+            said which field to cite. The model cited <code>FileName</code>. The escalation rule
+            required <code>ProcessCommandLine</code>. So a genuinely suspicious alert was
+            <b>held for a human instead of escalated</b>, and nothing in the output looked wrong.</p>
+          <p>Nobody had lied. The prompt and the rule simply disagreed about which field meant
+            "process". <code>gv prompt</code> removes that gap by generating the request from the
+            rules themselves: it asks for exactly the facts the rules name, citing exactly the
+            fields the rules name. Same model, same alert, correct field, escalation authorised.</p>
+        </div>
+      </div>
+
+      <figure class="use-code">
+        <figcaption>the same incident, before and after seeding</figcaption>
+<pre><span class="c"># The model claims the malware executed. The evidence field says false.</span>
+$ gv check --evidence e.json --claims c.json \
+      --approved approved.json
+<span class="out">ABSTAIN   isolate_host   executed is not grounded</span>
+<span class="out">                             (cited field is 'false', claim says 'true')</span>
+
+<span class="c"># --seed reads each rule's facts from its evidence field first, the way the
+# deployed runbook does. The model's version is kept and still shown, but it
+# can no longer decide anything.</span>
+$ gv check --evidence e.json --claims c.json --seed \
+      --approved approved.json
+<span class="out">DENY      isolate_host   executed is 'false', requires 'true'</span>
+
+<span class="c"># Exit codes are the contract, so a shell pipeline can act on them:
+#   0 authorised   1 not authorised   2 bad input
+#   3 a rule no longer matches approved.json, nothing decided</span>
+$ gv check ... --action isolate_host &amp;&amp; run_isolate
+<span class="out">exit 1  # so run_isolate never runs</span></pre>
       </figure>
     </div>
   </section>
