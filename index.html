@@ -26,9 +26,9 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css?v=108">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🖥️</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2383a598'/><text x='50' y='64' font-family='IBM Plex Mono,monospace' font-size='42' font-weight='700' fill='%231d2021' text-anchor='middle'>ks</text></svg>">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -69,15 +69,17 @@
         <h1>Kim Pi Skaw</h1>
         <p class="headline-2">Cloud &amp; Security Engineer who builds things that run themselves.</p>
         <p class="hero-blurb">
-          I secure and automate Microsoft cloud environments: <strong>Entra ID, Sentinel, Purview, Defender, Intune</strong>.
-          My default is to build the manual step away, and to make sure what replaces it can be
-          trusted, not just left running. Whether it's AI on a security problem or a system I run
-          myself, the habit is the same: stand it up, harden it, and own what broke.
+          I work across Microsoft cloud security, focusing on <strong>Entra ID, Sentinel, Purview,
+          Defender and Intune</strong>. Finding ways to automate repetitive tasks is what I enjoy
+          most, but automation only earns its place once it's properly tested, secured and
+          monitored, not just left to run. That mindset carries over to everything else I build,
+          from AI systems to my own homelab: get hands-on, build it, secure it, and take
+          responsibility when something breaks.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#work">
             See the work
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
           <a class="btn btn-outline" href="mailto:kimpiskaw@gmail.com">Get in touch</a>
         </div>
@@ -102,8 +104,7 @@
           <span class="ln out">               python · <span class="hl">local LLMs</span></span>
           <span class="ln out">certs          <span class="hl-green">security+</span> · AZ-104 · SC-200</span>
           <span class="ln out">               SC-300 · SC-401 · <span class="hl-green">AB-620</span></span>
-          <span class="ln out">write-ups      <span class="hl">5</span> published · <span class="hl">probative</span></span>
-          <span class="ln out">exposed ports  <span class="ok">0</span> · tailscale only</span>
+          <span class="ln out">write-ups      <span class="hl">4</span> published · <span class="hl">probative</span></span>
           <span class="ln out">─────────────────────────────</span>
           <span class="ln"><span class="p">kim@kimskaw.github.io:~$</span> <span class="caret"></span></span>
         </div>
@@ -113,7 +114,7 @@
     <!-- ============ WORK ============ -->
     <section id="work">
       <div class="section-head reveal"><span class="num">01</span><h2>Selected work</h2></div>
-      <p class="section-sub reveal">Three systems I built, broke, fixed, and wrote up in full, including the parts that went wrong.</p>
+      <p class="section-sub reveal">Four systems I built, broke, fixed, and wrote up in full, including the parts that went wrong.</p>
 
       <div class="projects-grid">
 
@@ -126,14 +127,14 @@
             <h3><a href="projects/probative.html">Probative: An LLM Triage Pipeline That Doesn't Trust Its Own Model</a></h3>
             <p class="trail"><span>structured</span><span>fabricated</span><span>caught</span><span>measured</span></p>
             <p class="summary">
-              A local research prototype, not a deployed tool, testing whether an AI's own security
-              findings can be checked rather than trusted. Sigma rules, not a model, decide which
-              alerts deserve attention and fix the severity
-              before any model runs. One local model explains the evidence; a second, which never
-              sees the first one's reasoning, judges whether that explanation holds. The check
-              earned its place the day it broke: when constrained decoding stopped the investigator
-              gathering evidence, the model invented whole incidents on hosts that don't exist, and
-              the deterministic check caught every one.
+              A local research prototype, not a deployed tool: can an AI's own security findings
+              actually be checked, instead of just taken on faith? Sigma rules decide which alerts
+              are worth looking at and set the severity before any model gets involved. One local
+              model writes up the evidence; a second, kept blind to the first one's reasoning,
+              judges whether that write-up actually holds up. The check proved its worth the day it
+              broke: constrained decoding knocked out the investigator's evidence gathering, the
+              model started inventing whole incidents on hosts that don't exist, and the
+              deterministic check caught every one of them.
             </p>
             <div class="feature-metrics">
               <div class="m"><b>13/13</b><span>fabrications caught</span></div>
@@ -148,7 +149,7 @@
             <div class="feature-links">
               <a class="link-arrow" href="projects/probative.html">
                 Read the write-up
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </a>
             </div>
           </div>
@@ -160,11 +161,11 @@
             <h3><a href="projects/grounding-verifier.html">grounding-verifier: A Safety Gate for AI That Takes Action</a></h3>
             <p class="trail"><span>claimed</span><span>grounded</span><span>authorized</span><span>acts</span></p>
             <p class="summary">
-              Let a cheap local AI triage your alerts, then check it instead of trusting it. Code, not a
-              model, grounds every claim against the field that proves it, then decides whether that
-              evidence justifies the action: authorize, deny, or hold for a human. Running in a lab
-              Azure Sentinel tenant on reversible actions, with local inference at zero token cost.
-              No model inside the check, so it cannot hallucinate the decision.
+              A cheap local model triages the alert, then something other than a model checks its
+              work. Every claim gets grounded against the field that actually proves it, and only
+              then does the gate decide: authorize, deny, or hold for a human. It runs against a lab
+              Azure Sentinel tenant, reversible actions only, with local inference at zero token
+              cost. No model inside the gate itself, so the decision cannot be hallucinated.
             </p>
             <div class="feature-metrics">
               <div class="m"><b>31%→5%</b><span>wrongful actions, gated</span></div>
@@ -179,7 +180,7 @@
             <div class="feature-links">
               <a class="link-arrow" href="projects/grounding-verifier.html">
                 Read the write-up
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </a>
             </div>
           </div>
@@ -209,7 +210,7 @@
             <div class="feature-links">
               <a class="link-arrow" href="projects/home-server.html">
                 Read the write-up
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </a>
             </div>
           </div>
@@ -221,10 +222,10 @@
             <h3><a href="projects/ai-pentest-lab.html">A Local AI Pentest Lab, Built to Learn</a></h3>
             <p class="trail"><span>confirmed</span><span>got stuck</span><span>traced</span><span>fixed upstream</span></p>
             <p class="summary">
-              A quantized local model, a homelab of intentionally vulnerable targets running
-              real CVEs, and an open-source AI agent running the exploit cycle on its own. The
-              best part wasn't the two CVEs it confirmed. It was finding and fixing a real bug
-              in the agent's own safety net.
+              A quantized local model drove an open-source pentest agent against a homelab of
+              intentionally vulnerable targets running real CVEs, left to run its own
+              recon-exploit-verify cycle. The best part wasn't the two CVEs it confirmed. It was
+              finding, and fixing, a real bug in the agent's own safety net.
             </p>
             <div class="feature-metrics">
               <div class="m"><b>2</b><span>CVEs confirmed</span></div>
@@ -238,7 +239,7 @@
             <div class="feature-links">
               <a class="link-arrow" href="projects/ai-pentest-lab.html">
                 Read the write-up
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </a>
             </div>
           </div>
@@ -250,7 +251,7 @@
     <!-- ============ STACK ============ -->
     <section id="stack">
       <div class="section-head reveal"><span class="num">02</span><h2>Stack</h2></div>
-      <p class="section-sub reveal">What I actually run: day job on the left, everything else earned in the homelab.</p>
+      <p class="section-sub reveal">What I use daily at work, and what I picked up on my own by running a homelab.</p>
       <div class="stack-grid reveal">
         <div class="stack-col cloud">
           <h3>Cloud &amp; security</h3>
@@ -260,6 +261,7 @@
             <span class="chip">Purview DLP</span><span class="chip">Intune</span>
             <span class="chip">Sigma / detection engineering</span>
             <span class="chip">Azure</span><span class="chip">Graph API</span>
+            <span class="chip">Penetration testing</span><span class="chip">CVE research</span>
           </div>
         </div>
         <div class="stack-col lab">
@@ -276,7 +278,7 @@
           <h3>AI &amp; automation</h3>
           <div class="chips">
             <span class="chip">Multi-agent orchestration</span><span class="chip">RAG / hybrid retrieval</span>
-            <span class="chip">LangChain</span>
+            <span class="chip">LangChain</span><span class="chip">LangGraph</span>
             <span class="chip">Local LLMs</span><span class="chip">n8n</span>
             <span class="chip">Python</span><span class="chip">Kotlin</span>
             <span class="chip">Technical write-ups</span>
@@ -309,7 +311,7 @@
 
 <footer class="footer">
   <div class="container footer-inner">
-    <span>© <span id="year">2026</span> Kim Pi Skaw · Hand-built, no trackers.</span>
+    <span>© <span id="year">2026</span> Kim Pi Skaw</span>
     <a href="https://github.com/kimskaw/kimskaw.github.io" target="_blank" rel="noopener">view source ↗</a>
   </div>
 </footer>

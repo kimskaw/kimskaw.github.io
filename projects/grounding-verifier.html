@@ -26,9 +26,9 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css?v=108">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔒</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%2383a598'/><text x='50' y='64' font-family='IBM Plex Mono,monospace' font-size='42' font-weight='700' fill='%231d2021' text-anchor='middle'>ks</text></svg>">
 <style>
 /* Scoped diagram styles, mapped onto the SITE's hue ring and semantic tokens.
    No private palette: every value is an alias, so the page follows the theme
@@ -192,6 +192,8 @@
   text-transform:uppercase;color:var(--muted);margin-bottom:7px}
 .gvfx .num .val{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--ink);
   font-variant-numeric:tabular-nums}
+.gvfx .num .val .cmp{display:block;font-size:9.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);font-weight:400;margin-bottom:4px}
 .gvfx .num .val .was{color:var(--muted);text-decoration:line-through;font-size:.8em;font-weight:400}
 .gvfx .num .val .now{color:var(--violet)}
 .gvfx .num .sub{font-size:12px;color:var(--muted);margin-top:6px}
@@ -275,7 +277,7 @@
 <main class="gvfx-wrap" id="main">
 <div class="gvfx">
 
-  <a class="back" href="../index.html#work"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>All work</a>
+  <a class="back" href="../index.html#work"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>All work</a>
 
   <header>
     <p class="eyebrow-m">grounding-verifier · security operations</p>
@@ -538,7 +540,7 @@
     <div class="nums">
       <div class="num">
         <div class="lab">Wrongful action</div>
-        <div class="val"><span class="was">30.52%</span> → <span class="now">4.78%</span></div>
+        <div class="val"><span class="cmp">ungated → gated</span><span class="was">30.52%</span> → <span class="now">4.78%</span></div>
         <div class="sub">Acting on what the model says, versus behind the gate. Populations
           differ: see the note below.</div>
       </div>
@@ -554,7 +556,7 @@
       </div>
       <div class="num">
         <div class="lab">When the evidence itself is wrong</div>
-        <div class="val"><span class="was">16.48%</span> → <span class="now">7.62%</span></div>
+        <div class="val"><span class="cmp">raw evidence → corroborated</span><span class="was">16.48%</span> → <span class="now">7.62%</span></div>
         <div class="sub">Corroborating a fact from a second source halves it. The rest is
           unreachable from inside.</div>
       </div>
@@ -733,7 +735,7 @@ $ gv check ... --action isolate_host &amp;&amp; run_isolate
 
 <footer class="footer">
   <div class="container footer-inner">
-    <span>© <span id="year">2026</span> Kim Pi Skaw · Hand-built, no trackers.</span>
+    <span>© <span id="year">2026</span> Kim Pi Skaw</span>
     <a href="https://github.com/kimskaw/kimskaw.github.io" target="_blank" rel="noopener">view source ↗</a>
   </div>
 </footer>
